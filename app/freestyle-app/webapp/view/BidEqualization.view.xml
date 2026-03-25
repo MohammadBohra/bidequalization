@@ -1,0 +1,478 @@
+<!--
+    Bid Equalization – Main Comparison View
+    Two-column side-by-side form:
+      Left  = Benchmark Bid (Foreign/Imported Supplier)
+      Right = Local Bid
+-->
+<mvc:View
+    controllerName="bidequalization.controller.BidEqualization"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:l="sap.ui.layout"
+    xmlns:f="sap.ui.layout.form"
+    xmlns:uxap="sap.uxap"
+    xmlns:core="sap.ui.core"
+    xmlns:app="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1"
+    displayBlock="true">
+
+    <uxap:ObjectPageLayout
+        id="mainPage"
+        busy="{appModel>/busy}"
+        showTitleInHeaderContent="true"
+        alwaysShowContentHeader="false"
+        showHeaderContent="true">
+
+        <!-- ═══ HEADER ════════════════════════════════════════════════════ -->
+        <uxap:headerTitle>
+            <uxap:ObjectPageDynamicHeaderTitle>
+                <uxap:heading>
+                    <Title text="Bid Equalization" level="H1" />
+                </uxap:heading>
+                <uxap:snappedHeading>
+                    <Title text="Bid Equalization" level="H2" />
+                </uxap:snappedHeading>
+                <uxap:expandedContent>
+                    <FlexBox direction="Row" wrap="Wrap" alignItems="Center">
+                        <ObjectAttribute title="RFQ"       text="{appModel>/rfqEventTitle}" class="sapUiSmallMarginEnd" />
+                        <ObjectAttribute title="Item"      text="{appModel>/rfqItemTitle}"  class="sapUiSmallMarginEnd" />
+                        <ObjectAttribute title="Commodity" text="{appModel>/commodity}"     class="sapUiSmallMarginEnd" />
+                        <ObjectAttribute title="Quantity"  text="{appModel>/quantity}" />
+                    </FlexBox>
+                </uxap:expandedContent>
+                <uxap:snappedContent>
+                    <Text text="{appModel>/rfqEventTitle} – {appModel>/rfqItemTitle}" />
+                </uxap:snappedContent>
+            </uxap:ObjectPageDynamicHeaderTitle>
+        </uxap:headerTitle>
+        <uxap:headerContent>
+            <FlexBox direction="Column">
+                <ObjectAttribute title="Active Formula" text="{appModel>/formulaName}" class="sapUiSmallMarginBottom" />
+                <Text text="{appModel>/formulaExpr}" renderWhitespace="true" />
+            </FlexBox>
+        </uxap:headerContent>
+
+        <uxap:sections>
+
+            <!-- ═══ SECTION 1: Saved Comparisons ═════════════════════════ -->
+            <uxap:ObjectPageSection title="Saved Comparisons" id="savedSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection title="">
+                        <uxap:blocks>
+                            <Table
+                                id="comparisonsTable"
+                                items="{appModel>/comparisons}"
+                                noDataText="No saved comparisons yet."
+                                growing="true"
+                                growingThreshold="5"
+                                mode="SingleSelectLeft"
+                                selectionChange=".onComparisonSelected">
+                                <columns>
+                                    <Column><Text text="Date" /></Column>
+                                    <Column><Text text="Benchmark Supplier" /></Column>
+                                    <Column><Text text="Local Supplier" /></Column>
+                                    <Column hAlign="End"><Text text="Equalized (Benchmark)" /></Column>
+                                    <Column hAlign="End"><Text text="Equalized (Local)" /></Column>
+                                    <Column><Text text="Winner" /></Column>
+                                    <Column><Text text="Notes" /></Column>
+                                </columns>
+                                <items>
+                                    <ColumnListItem type="Active">
+                                        <cells>
+                                            <Text text="{appModel>createdAt}" />
+                                            <Text text="{appModel>supplierLeftName}" />
+                                            <Text text="{appModel>supplierRightName}" />
+                                            <ObjectNumber number="{appModel>equalizedBidLeft}"  unit="{appModel>currency}" state="None" />
+                                            <ObjectNumber number="{appModel>equalizedBidRight}" unit="{appModel>currency}" state="None" />
+                                            <ObjectStatus text="{appModel>winnerName}" state="Success" icon="sap-icon://status-completed" />
+                                            <Text text="{appModel>notes}" />
+                                        </cells>
+                                    </ColumnListItem>
+                                </items>
+                            </Table>
+                        </uxap:blocks>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+
+            <!-- ═══ SECTION 2: Bid Comparison – Two-Column Form ══════════ -->
+            <uxap:ObjectPageSection title="Bid Comparison" id="comparisonSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection title="">
+                        <uxap:blocks>
+
+                            <!-- Two columns side by side (Grid = reliable 50/50) -->
+                            <l:Grid defaultSpan="L6 M12 S12" hSpacing="1" width="100%">
+
+                                <!-- ── LEFT: Benchmark Bid (Foreign/Imported) ── -->
+                                <Panel
+                                    headerText="🔹 Benchmark Bid – Foreign / Imported Supplier"
+                                    expandable="false"
+                                    expanded="true"
+                                    width="100%"
+                                    class="sapUiSmallMarginBottom">
+
+                                    <f:SimpleForm
+                                        editable="true"
+                                        layout="ResponsiveGridLayout"
+                                        labelSpanL="5" labelSpanM="5" labelSpanS="12"
+                                        inputSpanL="7" inputSpanM="7" inputSpanS="12"
+                                        columnsL="1" columnsM="1"
+                                        class="sapUiSmallMargin">
+                                        <f:content>
+
+                                            <!-- Vendor Name -->
+                                            <Label text="Vendor Name" required="true" />
+                                            <Input
+                                                id="leftVendorInput"
+                                                value="{appModel>/left/vendorName}"
+                                                placeholder="Search vendor..."
+                                                showValueHelp="true"
+                                                valueHelpRequest=".onVendorHelp"
+                                                width="100%">
+                                                <customData><core:CustomData key="side" value="left" /></customData>
+                                            </Input>
+
+                                            <!-- Benchmark Bid Type -->
+                                            <Label text="Benchmark Bid Type" />
+                                            <Select selectedKey="{appModel>/left/benchmarkBidType}" change=".onDropdownChange" width="100%">
+                                                <core:Item key=""    text="-- Select --" />
+                                                <core:Item key="FOB" text="FOB – Free On Board" />
+                                                <core:Item key="CIF" text="CIF – Cost, Insurance &amp; Freight" />
+                                                <core:Item key="CFR" text="CFR – Cost and Freight" />
+                                                <core:Item key="EXW" text="EXW – Ex Works" />
+                                                <core:Item key="DDP" text="DDP – Delivered Duty Paid" />
+                                                <core:Item key="DAP" text="DAP – Delivered at Place" />
+                                                <core:Item key="FAS" text="FAS – Free Alongside Ship" />
+                                            </Select>
+
+                                            <!-- Port of Export -->
+                                            <Label text="Port of Export" />
+                                            <Select selectedKey="{appModel>/left/portOfExport}" change=".onDropdownChange" width="100%">
+                                                <core:Item key=""          text="-- Select --" />
+                                                <core:Item key="JED"       text="Jeddah Islamic Port" />
+                                                <core:Item key="DAM"       text="Dammam – King Abdul Aziz Port" />
+                                                <core:Item key="DXB"       text="Dubai – Jebel Ali Port" />
+                                                <core:Item key="SHA"       text="Shanghai Port" />
+                                                <core:Item key="ROT"       text="Rotterdam Port" />
+                                                <core:Item key="HAM"       text="Hamburg Port" />
+                                                <core:Item key="SGP"       text="Singapore Port" />
+                                                <core:Item key="OTHER"     text="Other" />
+                                            </Select>
+
+                                            <!-- Benchmark Bid Value -->
+                                            <Label text="Benchmark Bid Value" required="true" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input value="{appModel>/left/benchmarkBidValue}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select selectedKey="{appModel>/left/benchmarkBidCurrency}" change=".onDropdownChange" width="33%">
+                                                    <core:Item key="SAR" text="SAR" />
+                                                    <core:Item key="USD" text="USD" />
+                                                    <core:Item key="EUR" text="EUR" />
+                                                    <core:Item key="GBP" text="GBP" />
+                                                    <core:Item key="AED" text="AED" />
+                                                    <core:Item key="CNY" text="CNY" />
+                                                    <core:Item key="JPY" text="JPY" />
+                                                </Select>
+                                            </FlexBox>
+
+                                            <!-- Development Type -->
+                                            <Label text="Development Type" />
+                                            <Select selectedKey="{appModel>/left/developmentType}" change=".onDropdownChange" width="100%">
+                                                <core:Item key="PO"          text="PO – Purchase Order" />
+                                                <core:Item key="SPO"         text="SPO – Standing Purchase Order" />
+                                                <core:Item key="CONTRACT"    text="Contract" />
+                                                <core:Item key="BLANKET"     text="Blanket PO" />
+                                            </Select>
+
+                                            <!-- Delivery Mode -->
+                                            <Label text="Delivery Mode" />
+                                            <Select selectedKey="{appModel>/left/deliveryMode}" change=".onDropdownChange" width="100%">
+                                                <core:Item key=""           text="-- Select --" />
+                                                <core:Item key="SEA"        text="Sea Freight" />
+                                                <core:Item key="AIR"        text="Air Freight" />
+                                                <core:Item key="LAND"       text="Land Transport" />
+                                                <core:Item key="MULTI"      text="Multimodal" />
+                                            </Select>
+
+                                            <!-- Benchmark Bid Value Range -->
+                                            <Label text="Bid Value Range" />
+                                            <Select selectedKey="{appModel>/left/bidValueRange}" change=".onDropdownChange" width="100%">
+                                                <core:Item key=""     text="-- Select --" />
+                                                <core:Item key="5"    text="± 5%" />
+                                                <core:Item key="10"   text="± 10%" />
+                                                <core:Item key="15"   text="± 15%" />
+                                                <core:Item key="20"   text="± 20%" />
+                                                <core:Item key="CUST" text="Custom" />
+                                            </Select>
+
+                                            <!-- Exceptional Weight / Curve Ratio -->
+                                            <Label text="Exceptional Weight / Curve Ratio" />
+                                            <Select selectedKey="{appModel>/left/curveRatio}" change=".onDropdownChange" width="100%">
+                                                <core:Item key=""        text="-- Select --" />
+                                                <core:Item key="STD"     text="Standard" />
+                                                <core:Item key="LIGHT"   text="Light" />
+                                                <core:Item key="HEAVY"   text="Heavy" />
+                                                <core:Item key="CUSTOM"  text="Custom" />
+                                            </Select>
+
+                                            <!-- Benchmark End Use Cost -->
+                                            <Label text="Benchmark End Use Cost" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input value="{appModel>/left/endUseCost}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select selectedKey="{appModel>/left/endUseCostCurrency}" change=".onDropdownChange" width="33%">
+                                                    <core:Item key="SAR" text="SAR" />
+                                                    <core:Item key="USD" text="USD" />
+                                                    <core:Item key="EUR" text="EUR" />
+                                                    <core:Item key="GBP" text="GBP" />
+                                                    <core:Item key="AED" text="AED" />
+                                                </Select>
+                                            </FlexBox>
+
+                                            <!-- Shipping Cost -->
+                                            <Label text="Shipping Cost" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input value="{appModel>/left/shippingCost}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select selectedKey="{appModel>/left/shippingCostCurrency}" change=".onDropdownChange" width="33%">
+                                                    <core:Item key="SAR" text="SAR" />
+                                                    <core:Item key="USD" text="USD" />
+                                                    <core:Item key="EUR" text="EUR" />
+                                                    <core:Item key="GBP" text="GBP" />
+                                                    <core:Item key="AED" text="AED" />
+                                                </Select>
+                                            </FlexBox>
+
+                                            <!-- Handling Cost -->
+                                            <Label text="Handling Cost" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input value="{appModel>/left/handlingCost}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select selectedKey="{appModel>/left/handlingCostCurrency}" change=".onDropdownChange" width="33%">
+                                                    <core:Item key="SAR" text="SAR" />
+                                                    <core:Item key="USD" text="USD" />
+                                                    <core:Item key="EUR" text="EUR" />
+                                                    <core:Item key="GBP" text="GBP" />
+                                                    <core:Item key="AED" text="AED" />
+                                                </Select>
+                                            </FlexBox>
+
+                                            <!-- Saudi Customs Rate -->
+                                            <Label text="Saudi Customs Rate (%)" />
+                                            <Input value="{appModel>/left/saudiCustomsRate}" type="Number" placeholder="0.00" width="100%" />
+
+                                            <!-- Saudi Manufacturer Premium -->
+                                            <Label text="Saudi Manufacturer Premium (%)" />
+                                            <Input value="{appModel>/left/saudiManufacturerPremium}" type="Number" placeholder="0.00" width="100%" />
+
+                                            <!-- Freight (Traffic) -->
+                                            <Label text="Freight (Traffic)" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input value="{appModel>/left/freight}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select selectedKey="{appModel>/left/freightCurrency}" change=".onDropdownChange" width="33%">
+                                                    <core:Item key="SAR" text="SAR" />
+                                                    <core:Item key="USD" text="USD" />
+                                                    <core:Item key="EUR" text="EUR" />
+                                                    <core:Item key="GBP" text="GBP" />
+                                                    <core:Item key="AED" text="AED" />
+                                                </Select>
+                                            </FlexBox>
+
+                                            <!-- Duty -->
+                                            <Label text="Duty" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input value="{appModel>/left/duty}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select selectedKey="{appModel>/left/dutyCurrency}" change=".onDropdownChange" width="33%">
+                                                    <core:Item key="SAR" text="SAR" />
+                                                    <core:Item key="USD" text="USD" />
+                                                    <core:Item key="EUR" text="EUR" />
+                                                    <core:Item key="GBP" text="GBP" />
+                                                    <core:Item key="AED" text="AED" />
+                                                </Select>
+                                            </FlexBox>
+
+                                            <!-- Premium -->
+                                            <Label text="Premium" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input value="{appModel>/left/premium}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select selectedKey="{appModel>/left/premiumCurrency}" change=".onDropdownChange" width="33%">
+                                                    <core:Item key="SAR" text="SAR" />
+                                                    <core:Item key="USD" text="USD" />
+                                                    <core:Item key="EUR" text="EUR" />
+                                                    <core:Item key="GBP" text="GBP" />
+                                                    <core:Item key="AED" text="AED" />
+                                                </Select>
+                                            </FlexBox>
+
+                                        </f:content>
+                                    </f:SimpleForm>
+                                </Panel>
+
+                                <!-- ── RIGHT: Local Bid ─────────────────────────── -->
+                                <Panel
+                                    headerText="🔹 Local Bid – Domestic Supplier"
+                                    expandable="false"
+                                    expanded="true"
+                                    width="100%"
+                                    class="sapUiSmallMarginBottom">
+
+                                    <f:SimpleForm
+                                        editable="true"
+                                        layout="ResponsiveGridLayout"
+                                        labelSpanL="5" labelSpanM="5" labelSpanS="12"
+                                        inputSpanL="7" inputSpanM="7" inputSpanS="12"
+                                        columnsL="1" columnsM="1"
+                                        class="sapUiSmallMargin">
+                                        <f:content>
+
+                                            <!-- Vendor Name -->
+                                            <Label text="Vendor Name" required="true" />
+                                            <Input
+                                                id="rightVendorInput"
+                                                value="{appModel>/right/vendorName}"
+                                                placeholder="Search vendor..."
+                                                showValueHelp="true"
+                                                valueHelpRequest=".onVendorHelp"
+                                                width="100%">
+                                                <customData><core:CustomData key="side" value="right" /></customData>
+                                            </Input>
+
+                                            <!-- Local Bid Type -->
+                                            <Label text="Local Bid Type" />
+                                            <Select selectedKey="{appModel>/right/localBidType}" change=".onDropdownChange" width="100%">
+                                                <core:Item key=""      text="-- Select --" />
+                                                <core:Item key="DDP"   text="DDP – Delivered Duty Paid" />
+                                                <core:Item key="DAP"   text="DAP – Delivered at Place" />
+                                                <core:Item key="EXW"   text="EXW – Ex Works" />
+                                                <core:Item key="LOCAL" text="Local Supply" />
+                                            </Select>
+
+                                            <!-- Local Bid Value -->
+                                            <Label text="Local Bid Value" required="true" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input value="{appModel>/right/localBidValue}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select selectedKey="{appModel>/right/localBidCurrency}" change=".onDropdownChange" width="33%">
+                                                    <core:Item key="SAR" text="SAR" />
+                                                    <core:Item key="USD" text="USD" />
+                                                    <core:Item key="EUR" text="EUR" />
+                                                    <core:Item key="GBP" text="GBP" />
+                                                    <core:Item key="AED" text="AED" />
+                                                </Select>
+                                            </FlexBox>
+
+                                            <!-- Local End Use Cost -->
+                                            <Label text="Local End Use Cost" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input value="{appModel>/right/localEndUseCost}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select selectedKey="{appModel>/right/localEndUseCostCurrency}" change=".onDropdownChange" width="33%">
+                                                    <core:Item key="SAR" text="SAR" />
+                                                    <core:Item key="USD" text="USD" />
+                                                    <core:Item key="EUR" text="EUR" />
+                                                    <core:Item key="GBP" text="GBP" />
+                                                    <core:Item key="AED" text="AED" />
+                                                </Select>
+                                            </FlexBox>
+
+                                            <!-- Total Local Bid -->
+                                            <Label text="Total Local Bid" />
+                                            <Input
+                                                value="{appModel>/right/totalLocalBid}"
+                                                type="Number"
+                                                placeholder="Calculated automatically"
+                                                editable="false"
+                                                width="100%"
+                                                class="sapUiSmallMarginBottom" />
+
+                                            <!-- Equalization Basis -->
+                                            <Label text="Equalization Basis" />
+                                            <Select selectedKey="{appModel>/right/equalizationBasis}" change=".onDropdownChange" width="100%">
+                                                <core:Item key=""          text="-- Select --" />
+                                                <core:Item key="PROVINCE"  text="Province Discussion" />
+                                                <core:Item key="NATIONAL"  text="National Average" />
+                                                <core:Item key="MARKET"    text="Market Rate" />
+                                                <core:Item key="NEGOTIATED" text="Negotiated" />
+                                            </Select>
+
+                                            <!-- Commodity Difference -->
+                                            <Label text="Commodity Difference" />
+                                            <Input value="{appModel>/right/commodityDifference}" type="Number" placeholder="0.00" width="100%" />
+
+                                            <!-- Difference (calculated) -->
+                                            <Label text="Difference" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input
+                                                    value="{appModel>/right/difference}"
+                                                    type="Number"
+                                                    placeholder="Calculated"
+                                                    editable="false"
+                                                    width="100%" />
+                                                <ObjectStatus
+                                                    visible="{= !!${appModel>/right/difference} }"
+                                                    text="{= parseFloat(${appModel>/right/difference}) >= 0 ? 'Local Higher' : 'Local Lower' }"
+                                                    state="{= parseFloat(${appModel>/right/difference}) >= 0 ? 'Error' : 'Success' }"
+                                                    class="sapUiSmallMarginBegin" />
+                                            </FlexBox>
+
+                                        </f:content>
+                                    </f:SimpleForm>
+
+                                    <!-- Equalization Result Banner -->
+                                    <MessageStrip
+                                        text="🏆 Winner: {appModel>/winnerName}"
+                                        type="Success"
+                                        showIcon="true"
+                                        visible="{appModel>/calculated}"
+                                        class="sapUiSmallMargin sapUiSmallMarginTop" />
+
+                                </Panel>
+                            </l:Grid>
+
+                        </uxap:blocks>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+
+            <!-- ═══ SECTION 3: Actions ════════════════════════════════════ -->
+            <uxap:ObjectPageSection title="Actions" id="actionsSection">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection title="">
+                        <uxap:blocks>
+                            <FlexBox direction="Row" wrap="Wrap" alignContent="Start">
+                                <Button
+                                    text="Calculate"
+                                    type="Emphasized"
+                                    icon="sap-icon://calculate"
+                                    press=".onCalculate"
+                                    class="sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+                                <Button
+                                    text="Save Comparison"
+                                    type="Default"
+                                    icon="sap-icon://save"
+                                    press=".onSaveComparison"
+                                    enabled="{appModel>/calculated}"
+                                    class="sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+                                <Button
+                                    text="Mark as Benchmark"
+                                    type="Default"
+                                    icon="sap-icon://flag"
+                                    press=".onMarkBenchmark"
+                                    enabled="{appModel>/calculated}"
+                                    class="sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+                                <Button
+                                    text="Generate PDF"
+                                    type="Default"
+                                    icon="sap-icon://pdf-attachment"
+                                    press=".onGeneratePDF"
+                                    enabled="{= !!${appModel>/lastComparisonID} }"
+                                    class="sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+                                <Button
+                                    text="Reset"
+                                    type="Transparent"
+                                    icon="sap-icon://reset"
+                                    press=".onReset"
+                                    class="sapUiSmallMarginBottom" />
+                            </FlexBox>
+                        </uxap:blocks>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+
+        </uxap:sections>
+    </uxap:ObjectPageLayout>
+</mvc:View>

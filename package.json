@@ -1,0 +1,48 @@
+{
+  "name": "bid-equalization",
+  "version": "1.0.0",
+  "description": "SAP CAP Bid Equalization System for Procurement",
+  "repository": "<repository-url>",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@sap/cds": "^8",
+    "@sap/cds-dk": "^8",
+    "express": "^4",
+    "pdfkit": "^0.15.0",
+    "sqlite3": "^5"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^1",
+    "cds-plugin-ui5": "^0.13.0"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch": "cds watch --livereload false",
+    "build": "cds build --production",
+    "watch-rfq-events": "cds watch --open rfqevents/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-freestyle": "cds watch --open freestyle-app/webapp/index.html --livereload false"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "database": "db/bid-equalization.db"
+        }
+      }
+    },
+    "i18n": {
+      "default_language": "en"
+    }
+  },
+  "workspaces": [
+    "app/*"
+  ],
+  "sapux": [
+    "app/rfq-events"
+  ]
+}

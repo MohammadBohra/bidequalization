@@ -1,0 +1,25 @@
+{
+  "services": {
+    "NavTargetResolution": {
+      "adapter": {
+        "module": "sap.ushell.adapters.mock.NavTargetResolutionAdapter",
+        "config": {
+          "applications": {
+            "RFQEvents-display": {
+              "additionalInformation": "SAPUI5.Component=bidrfq",
+              "applicationType": "URL",
+              "url": "/fiori-elements-app/webapp",
+              "description": "Bid Equalization",
+              "title": "RFQ Events"
+            }
+          }
+        }
+      }
+    },
+    "LaunchPage": {
+      "adapter": {
+        "module": "sap.ushell.adapters.mock.LaunchPageAdapter"
+      }
+    }
+  }
+}

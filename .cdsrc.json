@@ -1,0 +1,19 @@
+{
+  "log": {
+    "levels": {
+      "sqlite": "warn"
+    }
+  },
+  "requires": {
+    "db": {
+      "kind": "sqlite",
+      "credentials": { "database": "db/bid-equalization.db" }
+    }
+  },
+  "odata": {
+    "version": "v4"
+  },
+  "watch": {
+    "ignore": ["app/**", "*.md", ".git/**"]
+  }
+}

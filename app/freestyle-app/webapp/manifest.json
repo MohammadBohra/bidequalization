@@ -1,0 +1,154 @@
+{
+  "_version": "1.49.0",
+  "sap.app": {
+    "id": "bidequalization",
+    "type": "application",
+    "title": "Bid Equalization",
+    "description": "Freestyle UI5 app for comparing supplier bids",
+    "dataSources": {
+      "BidEqualizationService": {
+        "uri": "/api/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": false
+    }
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "bidequalization.view.App",
+      "type": "XML",
+      "async": true,
+      "id": "app"
+    },
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {},
+        "sap.ui.table": {},
+        "sap.uxap": {}
+      }
+    },
+    "models": {
+      "": {
+        "dataSource": "BidEqualizationService",
+        "preload": true,
+        "settings": {
+          "synchronizationMode": "None",
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "appModel": {
+        "type": "sap.ui.model.json.JSONModel",
+        "settings": {
+          "data": {
+            "rfqItemID": null,
+            "rfqItemTitle": "Loading...",
+            "rfqEventTitle": "",
+            "commodity": "",
+            "quantity": "",
+            "supplierLeftID": null,
+            "supplierRightID": null,
+            "supplierLeftName": "",
+            "supplierRightName": "",
+            "bidLeft": {},
+            "bidRight": {},
+            "equalizedLeft": null,
+            "equalizedRight": null,
+            "winner": null,
+            "winnerName": "",
+            "savings": "",
+            "leftState": "None",
+            "rightState": "None",
+            "formulaName": "",
+            "formulaExpr": "",
+            "suppliers": [],
+            "comparisons": [],
+            "calculated": false,
+            "busy": false,
+            "lastComparisonID": null,
+            "left": {
+              "vendorName": "",
+              "benchmarkBidType": "",
+              "portOfExport": "",
+              "benchmarkBidValue": "",
+              "benchmarkBidCurrency": "USD",
+              "developmentType": "PO",
+              "deliveryMode": "",
+              "bidValueRange": "",
+              "curveRatio": "",
+              "endUseCost": "",
+              "endUseCostCurrency": "USD",
+              "shippingCost": "",
+              "shippingCostCurrency": "USD",
+              "handlingCost": "",
+              "handlingCostCurrency": "USD",
+              "saudiCustomsRate": "",
+              "saudiManufacturerPremium": "",
+              "freight": "",
+              "freightCurrency": "USD",
+              "duty": "",
+              "dutyCurrency": "USD",
+              "premium": "",
+              "premiumCurrency": "USD"
+            },
+            "right": {
+              "vendorName": "",
+              "localBidType": "",
+              "localBidValue": "",
+              "localBidCurrency": "SAR",
+              "localEndUseCost": "",
+              "localEndUseCostCurrency": "SAR",
+              "totalLocalBid": "",
+              "equalizationBasis": "",
+              "commodityDifference": "",
+              "difference": ""
+            }
+          }
+        }
+      },
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "bidequalization.i18n.i18n"
+        }
+      }
+    },
+    "routing": {
+      "config": {
+        "routerClass": "sap.m.routing.Router",
+        "viewType": "XML",
+        "viewPath": "bidequalization.view",
+        "controlId": "app",
+        "controlAggregation": "pages",
+        "async": true
+      },
+      "routes": [
+        {
+          "name": "BidEqualization",
+          "pattern": "",
+          "target": "BidEqualization"
+        }
+      ],
+      "targets": {
+        "BidEqualization": {
+          "viewId": "BidEqualization",
+          "viewName": "BidEqualization"
+        }
+      }
+    }
+  }
+}

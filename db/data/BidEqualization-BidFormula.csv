@@ -1,0 +1,4 @@
+ID,name,expression,description,isActive,createdAt,modifiedAt,createdBy,modifiedBy
+55555555-0000-0000-0000-000000000001,Standard Landed Cost,localBidValue + shippingCost + handlingCost + customDuty + premium,Sum of all cost components to arrive at total landed cost,true,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z,admin,admin
+55555555-0000-0000-0000-000000000002,Basic Bid Only,localBidValue,Considers only the base bid value without additional costs,false,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z,admin,admin
+55555555-0000-0000-0000-000000000003,Bid with Logistics,localBidValue + shippingCost + handlingCost,Considers bid plus logistics costs only,false,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z,admin,admin

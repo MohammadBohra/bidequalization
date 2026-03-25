@@ -1,0 +1,1 @@
+using BidEqualizationService as service from '../../srv/service';

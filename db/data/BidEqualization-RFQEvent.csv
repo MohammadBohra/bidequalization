@@ -1,0 +1,4 @@
+ID,eventID,eventName,description,status,createdAt,modifiedAt,createdBy,modifiedBy
+11111111-0000-0000-0000-000000000001,RFQ-2024-001,Steel Procurement Q1 2024,Procurement of structural steel for Q1 manufacturing,Open,2024-01-10T08:00:00Z,2024-01-10T08:00:00Z,admin,admin
+11111111-0000-0000-0000-000000000002,RFQ-2024-002,Electronic Components Q1 2024,Sourcing of PCB components and semiconductors,Open,2024-01-15T09:00:00Z,2024-01-15T09:00:00Z,admin,admin
+11111111-0000-0000-0000-000000000003,RFQ-2024-003,Office Supplies Annual Contract,Annual office supplies and stationery procurement,Closed,2024-01-20T10:00:00Z,2024-01-20T10:00:00Z,admin,admin
