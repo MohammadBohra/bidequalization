@@ -22,7 +22,10 @@ service BidEqualizationService @(requires: 'authenticated-user'){
 
     entity SupplierBids   as projection on BidEqualization.SupplierBid;
 
-    entity BidComparisons as projection on BidEqualization.BidComparison;
+    entity BidComparisons as projection on BidEqualization.BidComparison {
+        *,
+        additionalFields
+    };
 
     entity BidFormulas    as projection on BidEqualization.BidFormula;
     entity SelectItems as projection on BidEqualization.SelectItems;

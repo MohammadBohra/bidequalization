@@ -867,6 +867,14 @@ const leftEqualizedBid = this._formatDecimal(this._getInputValue(oView, "leftEqu
   const formulaExpr = oView.byId("formulaExpr").getText();
   const leftldor = this._formatDecimal(oView.byId("leftldor").getValue() || "");
 
+  const aRightAdditionalFields = oModel.getProperty("/rightAdditionalFields") || [];
+
+const aAdditionalPayload = aRightAdditionalFields.map(f => ({
+  fieldName: f.fieldName,
+  fieldValue: f.fieldValue,
+  side: "RIGHT"
+}));
+
   try {
     const oPayload = {
       rfqItem_ID: oModel.getProperty("/rfqItemID"),
@@ -919,7 +927,8 @@ const leftEqualizedBid = this._formatDecimal(this._getInputValue(oView, "leftEqu
       rightCommodityDifference,
       rightDifference,
       formulaExpr,
-      leftldor
+      leftldor,
+      additionalFields: aAdditionalPayload
     };
           // create binding once (reuse if you want)
 const oListBinding = oModelOdata.bindList("/BidComparisons");
@@ -1554,6 +1563,18 @@ onSaveComparison1: function () {
   });
 },
 
+onAddRightField: function () {
+  const oModel = this.getOwnerComponent().getModel("appModel");
+  const aFields = oModel.getProperty("/rightAdditionalFields") || [];
+
+  aFields.push({
+    fieldName: "",
+    fieldValue: ""
+  });
+
+  oModel.setProperty("/rightAdditionalFields", aFields);
+},
+
       onComparisonSelected: function (oEvent) {
   const oListItem = oEvent.getParameter("listItem");
   const oCtx = oListItem?.getBindingContext();
@@ -1570,16 +1591,40 @@ onSaveComparison1: function () {
   oAppModel.setProperty("/lastComparisonID", sID);
 
   // CRITICAL: bind VIEW to selected OData context
-  this.getView().setBindingContext(oCtx);
+  // this.getView().setBindingContext(oCtx);
+  this.getView().bindElement({
+  path: oCtx.getPath(),
+  parameters: {
+    $expand: "additionalFields"
+  },
+  events: {
+    dataReceived: () => {
+      const oCtxNew = this.getView().getBindingContext();
+      oCtxNew.requestObject("additionalFields").then(aFields => {
+  console.log(aFields);
+  const aRightFields = aFields.filter(f => f.side === "RIGHT");
+  this.getOwnerComponent().getModel("appModel")
+  .setProperty("/rightAdditionalFields", aRightFields);
+});
+    }
+  }
+});
+// const oCtx = this.getView().getBindingContext();
 
-   // ✅ Calculate Total Local Bid Value
+
+
+   // Calculate Total Local Bid Value
   const bidValue = this._formatDecimal(oCtx.getProperty("rightLocalBidValue")) || 0;
   const euc = this._formatDecimal(oCtx.getProperty("rightLocalEndUseCost")) || 0;
   const total = bidValue + euc;
 
-  // ✅ Populate field
+  // Populate field
   this.getView().byId("rightTotalLocalBid").setValue(total);
-
+  // populate additional fields
+  // const aFields = oCtx.getProperty("additionalFields") || [];
+  // const aFields = this.getView().getBindingContext().getProperty("additionalFields");
+// Filter RIGHT side
+  
   MessageToast.show("Comparison loaded.");
 },
 

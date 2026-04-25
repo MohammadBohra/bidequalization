@@ -164,6 +164,9 @@ entity BidComparison : cuid, managed {
 
     formulaExpr : String;
     leftldor: Decimal(15,2);
+
+    additionalFields : Composition of many BidComparisonAdditionalField
+        on additionalFields.comparison = $self;
 }
 
 // ─────────────────────────────────────────────
@@ -202,4 +205,13 @@ entity SelectItems {
     sequence      : Integer;      
     isActive      : Boolean default true;
 
+}
+
+entity BidComparisonAdditionalField : cuid, managed {
+    comparison : Association to BidComparison;
+
+    fieldName  : String(100);
+    fieldValue : String(500);
+
+    side       : String(10); // 'LEFT' or 'RIGHT' (important!)
 }

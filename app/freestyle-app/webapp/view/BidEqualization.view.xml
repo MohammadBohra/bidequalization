@@ -63,7 +63,7 @@
     items="{
   path: '/BidComparisons',
   parameters: {
-    expand: 'supplierLeft,supplierRight,winnerSupplier'
+    expand: 'additionalFields,supplierLeft,supplierRight,winnerSupplier'
   },
   sorter: {
     path: 'createdAt',
@@ -647,6 +647,30 @@
                                         showIcon="true"
                                         visible="false"
                                         class="sapUiSmallMargin sapUiSmallMarginTop"/>
+
+                                        <VBox>
+  <Toolbar>
+    <Title text="Additional Fields"/>
+    <ToolbarSpacer/>
+    <Button icon="sap-icon://add" press="onAddRightField"/>
+  </Toolbar>
+
+  <Table items="{appModel>/rightAdditionalFields}">
+    <columns>
+      <Column><Text text="Field"/></Column>
+      <Column><Text text="Value"/></Column>
+    </columns>
+
+    <items>
+      <ColumnListItem>
+        <cells>
+          <Input value="{appModel>fieldName}"/>
+          <Input value="{appModel>fieldValue}"/>
+        </cells>
+      </ColumnListItem>
+    </items>
+  </Table>
+</VBox>
 
                                 </Panel>
                             </l:Grid>

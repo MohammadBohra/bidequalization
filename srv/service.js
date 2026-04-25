@@ -201,6 +201,10 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
           .from("BidEqualization.BidComparison")
           .where({ ID: comparisonID }),
       );
+      const additionalFields = await db.run(
+  SELECT.from("BidEqualization.BidComparisonAdditionalField")
+    .where({ comparison_ID: comparisonID })
+);
       if (!comparison) {
         return req.error(404, `BidComparison ${comparisonID} not found`);
       }
@@ -225,7 +229,8 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
        const pdfBuffer = await _generatePDFBuffer({
         comparison,
         rfqEvent,
-        rfqItem
+        rfqItem,
+        additionalFields
       });
 
 
@@ -369,7 +374,8 @@ function _generatePDFBuffer({
   comparison,
   rfqEvent,
   rfqItem,
-  bidLeft  
+  bidLeft,
+  additionalFields  
 }) {
   return new Promise((resolve, reject) => {
     let PDFDocument;
@@ -549,10 +555,94 @@ function _generatePDFBuffer({
     //   .font("Helvetica-Bold")
     //   .fillColor("green")
     //   .text(`Winner: ${winner?.supplierName || "N/A"}`, { align: "center" });
-   const diff = Number(comparison?.rightCommodityDifference || 0);
-const diffperc = Number(comparison?.rightDifference || 0);
+   
 
-const y = doc.y;
+
+// ****************************
+// ── Additional Details Table (FIXED)
+// ****************************
+
+doc.fillColor("black");
+doc.moveDown(1.5);
+
+doc.fontSize(13)
+  .font("Helvetica-Bold")
+  .text("Additional Details");
+
+doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+doc.moveDown(0.5);
+
+// ── RESET clean 2-column layout (IMPORTANT)
+const ADD_COL_FIELD = 50;
+const ADD_COL_VALUE = 250;
+
+let addnly = doc.y;
+
+// ── Header (FORCE LEFT ALIGN)
+doc.fontSize(10).font("Helvetica-Bold");
+
+doc.text("Field", ADD_COL_FIELD, addnly, {
+  width: 180,
+  align: "left"
+});
+
+doc.text("Value", ADD_COL_VALUE, addnly, {
+  width: 300,
+  align: "left"
+});
+
+addnly += 18;
+doc.y = addnly;
+
+doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+doc.moveDown(0.3);
+
+// ── Body
+doc.font("Helvetica").fontSize(10);
+
+if (!additionalFields || additionalFields.length === 0) {
+  doc.text("No additional details available.", 50, doc.y);
+} else {
+
+  additionalFields.forEach((row) => {
+    const field = row.fieldName || "-";
+    const value = row.fieldValue || "-";
+
+    const rowHeight =
+      Math.max(
+        doc.heightOfString(field, { width: 180 }),
+        doc.heightOfString(value, { width: 300 }),
+        15
+      );
+
+    let rowY = doc.y;
+
+    // page break safety
+    if (rowY + rowHeight > 750) {
+      doc.addPage();
+      rowY = 50;
+      doc.y = rowY;
+    }
+
+    // FORCE LEFT ALIGN ALWAYS
+    doc.text(field, ADD_COL_FIELD, rowY, { width: 180, align: "left" });
+    doc.text(value, ADD_COL_VALUE, rowY, { width: 300, align: "left" });
+
+    doc.y = rowY + rowHeight + 6;
+  });
+}
+
+// bottom border
+doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+doc.moveDown(1);
+
+
+
+// *******************Difference and Difference % ***********
+const diff = Number(comparison?.rightCommodityDifference || 0);
+    const diffperc = Number(comparison?.rightDifference || 0);
+
+  const y = doc.y;
 
 doc.fontSize(10).font("Helvetica").moveDown(0.5);
 
@@ -571,8 +661,6 @@ doc.text(`Difference (%): ${diffperc}`, 40, doc.y, {
   align: "left"
 });
 
-// reset color back (IMPORTANT for next text)
-doc.fillColor("black");
 
     // ── Footer ─────────────────────────────────────────────────
     doc.moveDown(3);
