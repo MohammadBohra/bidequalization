@@ -1,0 +1,40 @@
+ID,category,code,text,sequence,isActive
+1,BID_TYPE,A,FOB Port of Export,1,true
+2,BID_TYPE,B,Vendor Delivered - Duty Included,2,true
+3,BID_TYPE,C,Vendor Delivered - Duty Exempt,3,true
+4,BID_TYPE,D,Saudi Vendor - LDOR,4,true
+
+10,PORT,JED,Jeddah Islamic Port,1,true
+11,PORT,DAM,Dammam – King Abdul Aziz Port,2,true
+12,PORT,DXB,Dubai – Jebel Ali Port,3,true
+13,PORT,SHA,Shanghai Port,4,true
+
+20,CURRENCY,SAR,SAR,1,true
+21,CURRENCY,USD,USD,2,true
+22,CURRENCY,EUR,EUR,3,true
+23,CURRENCY,GBP,GBP,4,true
+24,CURRENCY,AED,AED,5,true
+
+30,DELIVERY_MODE,4,Air,1,true
+31,DELIVERY_MODE,5,Marine,2,true
+32,DELIVERY_MODE,6,All,3,true
+
+40,DEV_TYPE,PO,PO,1,true
+41,DEV_TYPE,PA,PA,2,true
+42,DEV_TYPE,All,All,2,true
+
+
+100,LOCAL_BID_TYPE,E,FOB Port of Export,1,true
+101,LOCAL_BID_TYPE,F,Vendor Delivered Duty Exempt,2,true
+102,LOCAL_BID_TYPE,G,Vendor Delivered Duty Included,3,true
+103,LOCAL_BID_TYPE,H,Vendor LDOR General Supply,4,true
+104,LOCAL_BID_TYPE,I,Vendor LDOR Spare Parts,5,true
+105,LOCAL_BID_TYPE,J,Delivery SA Mfr,6,true
+106,LOCAL_BID_TYPE,K,SA Mfr LDOR Spare Parts,7,true
+107,LOCAL_BID_TYPE,L,SA Mfr LDOR General Supply,8,true
+
+150,BENCH_BID_VAL_RANGE,L,<100000,1,true
+151,BENCH_BID_VAL_RANGE,G,>=100000,2,true
+
+200,CUBE_RATIO,YES,Yes,1,true
+201,CUBE_RATIO,NO,No,2,true

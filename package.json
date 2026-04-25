@@ -9,15 +9,21 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@sap/cds": "^8",
-    "@sap/cds-dk": "^8",
+    "@cap-js/hana": "^2",
+    "@sap-cloud-sdk/connectivity": "^4.2.0",
+    "@sap-cloud-sdk/http-client": "^4.3.0",
+    "@sap-cloud-sdk/resilience": "^4.2.0",
+    "@sap/cds": "^9.8.0",
+    "@sap/xssec": "^4.12.1",
     "express": "^4",
-    "pdfkit": "^0.15.0",
-    "sqlite3": "^5"
+    "pdfkit": "^0.18.0"
   },
   "devDependencies": {
-    "@cap-js/sqlite": "^1",
-    "cds-plugin-ui5": "^0.13.0"
+    "@cap-js/sqlite": "^2.1.2",
+    "@sap/cds-dk": "^9",
+    "cds-plugin-ui5": "^0.13.0",
+    "mbt": "^1.2.29",
+    "rimraf": "^5.0.5"
   },
   "scripts": {
     "start": "cds-serve",
@@ -27,16 +33,36 @@
     "watch-freestyle": "cds watch --open freestyle-app/webapp/index.html --livereload false"
   },
   "cds": {
+    "connectivity": true,
+    "destinations": true,
     "requires": {
       "db": {
-        "kind": "sqlite",
+        "kind": "hana"
+      },
+      "ARIBA": {
+        "kind": "rest",
         "credentials": {
-          "database": "db/bid-equalization.db"
+          "destination": "Aramco-e-Marketplace"
         }
-      }
-    },
-    "i18n": {
-      "default_language": "en"
+      },
+      "uaa": {
+        "kind": "xsuaa"
+      },
+      "auth": {
+        "[development]": {
+          "kind": "mocked",
+          "users": {
+            "mbohra-v@ejada.com": {}
+          }
+        },
+        "[production]": {
+          "kind": "xsuaa"
+        }
+      },
+      "connectivity": true,
+      "destinations": true,
+      "html5-repo": true,
+      "workzone": true
     }
   },
   "workspaces": [

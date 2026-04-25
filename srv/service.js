@@ -19,6 +19,52 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
     // ACTION: calculateComparison
     // ─────────────────────────────────────────────────────────────
     this.on("calculateComparison", async (req) => {
+  try {
+    const data = req.data;
+
+    const bidValue = parseFloat(data.leftBidValue) || 0;
+
+    // ================= FETCH MATCHING FORMULA =================
+    const formula = await SELECT.one.from("BidEqualization.BidFormula")
+      .where({
+        isActive: true,
+        leftBenchmarkBidType: data.leftBenchmarkBidType,
+        leftDevelopmentType: data.leftDevelopmentType,
+        leftDeliveryMode: data.leftDeliveryMode,
+        leftExceptionalWeight: data.leftExceptionalWeight,
+        leftBidValueRange: data.leftBidValueRange,
+        rightLocalBidType:data.rightLocalBidType
+      });
+    if (!formula) {
+      req.error(400, "No matching formula found");
+      return data;
+    }
+
+    // ================= EVALUATE =================
+    const leftEqualizedBid = _evaluateFormula(formula, {
+      bidValue,
+      shippingCost: parseFloat(data.leftShippingCost) || 0,
+      handlingCost: parseFloat(data.leftHandlingCost) || 0,
+      euc: parseFloat(data.leftEUC) || 0,
+      customDuty: (data.leftSaudiCustomsRate || 0) / 100,
+      premiumRate: (data.leftSaudiManufacturerPremium || 0) / 100      
+    });
+
+    return {
+      leftEqualizedBid,
+      formulaName: formula.name,
+      formulaExpr: formula.expression
+    };
+
+  } catch (err) {
+    console.error(err);
+    req.error(500, "Error calculating comparison");
+  }
+});
+
+
+
+    this.on("calculateComparison1", async (req) => {
       const { rfqItemID, supplierLeft, supplierRight } = req.data;
       const db = cds.db;
 
@@ -144,6 +190,7 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
     // ─────────────────────────────────────────────────────────────
     // ACTION: generatePDF
     // ─────────────────────────────────────────────────────────────
+    
     this.on("generatePDF", async (req) => {
       const { comparisonID } = req.data;
       const db = cds.db;
@@ -159,26 +206,11 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
       }
 
       // Fetch related entities for report content
-      const [rfqItem, supplierLeft, supplierRight, winner] = await Promise.all([
+      const [rfqItem] = await Promise.all([
         db.run(
           SELECT.one
             .from("BidEqualization.RFQItem")
             .where({ ID: comparison.rfqItem_ID }),
-        ),
-        db.run(
-          SELECT.one
-            .from("BidEqualization.Supplier")
-            .where({ ID: comparison.supplierLeft_ID }),
-        ),
-        db.run(
-          SELECT.one
-            .from("BidEqualization.Supplier")
-            .where({ ID: comparison.supplierRight_ID }),
-        ),
-        db.run(
-          SELECT.one
-            .from("BidEqualization.Supplier")
-            .where({ ID: comparison.winnerSupplier_ID }),
         ),
       ]);
 
@@ -187,56 +219,37 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
         ? await db.run(
             SELECT.one
               .from("BidEqualization.RFQEvent")
-              .where({ ID: rfqItem.rfq_ID }),
+              .where({ eventID: rfqItem.rfq_eventID }),
           )
         : null;
-
-      // Fetch bids for both suppliers
-      const [bidLeft, bidRight] = await Promise.all([
-        db.run(
-          SELECT.one
-            .from("BidEqualization.SupplierBid")
-            .where({
-              rfqItem_ID: comparison.rfqItem_ID,
-              supplier_ID: comparison.supplierLeft_ID,
-            }),
-        ),
-        db.run(
-          SELECT.one
-            .from("BidEqualization.SupplierBid")
-            .where({
-              rfqItem_ID: comparison.rfqItem_ID,
-              supplier_ID: comparison.supplierRight_ID,
-            }),
-        ),
-      ]);
-
-      // Fetch active formula
-      const formula = await db.run(
-        SELECT.one.from("BidEqualization.BidFormula").where({ isActive: true }),
-      );
-
-      // Generate PDF buffer
-      const pdfBuffer = await _generatePDFBuffer({
+       const pdfBuffer = await _generatePDFBuffer({
         comparison,
         rfqEvent,
-        rfqItem,
-        supplierLeft,
-        supplierRight,
-        winner,
-        bidLeft,
-        bidRight,
-        formula,
+        rfqItem
       });
 
-      // Set response headers for PDF download
-      req.res?.setHeader("Content-Type", "application/pdf");
-      req.res?.setHeader(
-        "Content-Disposition",
-        `attachment; filename="BidComparison_${comparisonID}.pdf"`,
-      );
 
-      return pdfBuffer;
+      const res = req._.res; 
+
+res.setHeader("Content-Type", "application/pdf");
+res.setHeader(
+  "Content-Disposition",
+  `attachment; filename="BidComparison_${comparisonID}.pdf"`
+);
+res.setHeader("Content-Length", pdfBuffer.length);
+
+// Send binary directly
+res.end(pdfBuffer);
+
+// Tell CAP: response already handled
+return;
+
+
+
+
+
+
+
     });
 
     // Register default CRUD handlers
@@ -252,43 +265,101 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
 // Allowed variable names (must match SupplierBid field names):
 //   localBidValue, shippingCost, handlingCost, customDuty, premium
 // ─────────────────────────────────────────────────────────────────────
-function _evaluateFormula(expression, bid) {
-  const allowedVars = {
-    localBidValue: Number(bid.localBidValue || 0),
-    shippingCost: Number(bid.shippingCost || 0),
-    handlingCost: Number(bid.handlingCost || 0),
-    customDuty: Number(bid.customDuty || 0),
-    premium: Number(bid.premium || 0),
-  };
 
-  // Validate expression – only allow numbers, operators, spaces, and known variable names
-  const sanitized = expression.trim();
-  const identifiers = sanitized.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || [];
 
-  for (const id of identifiers) {
-    if (!(id in allowedVars)) {
-      throw new Error(
-        `Formula contains unknown variable: "${id}". ` +
-          `Allowed: ${Object.keys(allowedVars).join(", ")}`,
-      );
+function _evaluateFormula(formulaObj, context) {
+  try {
+    if (!formulaObj) {
+      return { result: null, error: "No formula" };
     }
-  }
 
-  // Replace variable names with their numeric values
-  let resolved = sanitized;
-  for (const [name, value] of Object.entries(allowedVars)) {
-    // Use word-boundary-safe replacement
-    resolved = resolved.replace(
-      new RegExp(`\\b${name}\\b`, "g"),
-      value.toString(),
-    );
-  }
+    const safeEval = (expr, ctx) => {
+      if (!expr) return 0;
 
-  // Evaluate using Function constructor (safe – only math operators left after substitution)
-  // eslint-disable-next-line no-new-func
-  const result = new Function(`"use strict"; return (${resolved});`)();
-  return Math.round(result * 100) / 100; // Round to 2 decimal places
+      let evaluated = expr;
+
+      // replace variables
+      Object.keys(ctx).forEach(key => {
+        const value = ctx[key] ?? 0;
+        const regex = new RegExp(`\\b${key}\\b`, "g");
+        evaluated = evaluated.replace(regex, value);
+      });
+
+      // handle ROUND(x, y)
+      evaluated = evaluated.replace(/ROUND\(([^,]+),\s*(\d+)\)/g, (_, val, decimals) => {
+        return `Math.round((${val}) * ${Math.pow(10, decimals)}) / ${Math.pow(10, decimals)}`;
+      });
+
+      return new Function(`return (${evaluated})`)();
+    };
+
+    // 1. TRAFFIC
+    const traffic = safeEval(formulaObj.trafficexpression, context) || 0;
+
+    // 2. DUTY
+    const dutyContext = { ...context, traffic };
+    const duty = safeEval(formulaObj.dutyexpression, dutyContext) || 0;
+
+    // 3. LDOR
+    const ldorContext = { ...dutyContext, duty };
+    const ldor = safeEval(formulaObj.ldorexpression, ldorContext) || 0;
+
+    // 3. PREMIUM
+    const premiumContext = { ...ldorContext, ldor };
+    const premium = safeEval(formulaObj.premiumexpression, premiumContext) || 0;
+
+    // 4. FINAL
+    const finalContext = {
+      ...context,
+      traffic,
+      duty,
+      ldor,
+      premium
+    };
+
+    let finalExpr = formulaObj.expression;
+
+    Object.keys(finalContext).forEach(key => {
+      const value = finalContext[key] ?? 0;
+      finalExpr = finalExpr.replace(new RegExp(`\\b${key}\\b`, "g"), value);
+    });
+
+    const resultRaw = new Function(`return (${finalExpr})`)();
+
+    const result = Math.round(resultRaw * 100) / 100;
+
+    return {
+      result,
+      breakdown: {
+        traffic: Math.round(traffic * 100) / 100,
+        duty: Math.round(duty * 100) / 100,
+        ldor: Math.round(ldor * 100) / 100,
+        premium: Math.round(premium * 100) / 100
+      },
+      evaluated: {
+        trafficExpr: formulaObj.trafficexpression,
+        dutyExpr: formulaObj.dutyexpression,
+        ldorExpr: formulaObj.ldorexpression,
+        premiumExpr: formulaObj.premiumexpression,
+        finalExpr
+      },
+      variables: context
+    };
+
+  } catch (err) {
+    return {
+      result: null,
+      error: err.message,
+      variables: context
+    };
+  }
 }
+
+
+
+
+
+
 
 // ─────────────────────────────────────────────────────────────────────
 // HELPER: _generatePDFBuffer
@@ -298,12 +369,7 @@ function _generatePDFBuffer({
   comparison,
   rfqEvent,
   rfqItem,
-  supplierLeft,
-  supplierRight,
-  winner,
-  bidLeft,
-  bidRight,
-  formula,
+  bidLeft  
 }) {
   return new Promise((resolve, reject) => {
     let PDFDocument;
@@ -321,7 +387,7 @@ function _generatePDFBuffer({
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    const currency = bidLeft?.currency || "USD";
+    const currency = bidLeft?.currency || "SAR";
     const fmt = (v) =>
       `${currency} ${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 
@@ -366,16 +432,12 @@ function _generatePDFBuffer({
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
     doc.moveDown(0.3);
     doc.fontSize(10).font("Helvetica");
-    doc
-      .font("Helvetica-Bold")
-      .text("Formula Name: ", { continued: true })
-      .font("Helvetica")
-      .text(formula?.name || "N/A");
+    
     doc
       .font("Helvetica-Bold")
       .text("Expression: ", { continued: true })
       .font("Helvetica")
-      .text(formula?.expression || "N/A");
+      .text(comparison?.formulaExpr || "N/A");
     doc.moveDown(1.5);
 
     // ── Comparison Table ───────────────────────────────────────
@@ -389,50 +451,81 @@ function _generatePDFBuffer({
     const rowH = 20;
 
     // Table header
+    var headerY = doc.y;
     doc.fontSize(10).font("Helvetica-Bold");
-    doc.text("Cost Component", colField, doc.y, { width: 180 });
-    const headerY = doc.y - rowH;
-    doc.text(supplierLeft?.supplierName || "Left Supplier", colLeft, headerY, {
+    doc.text("Cost Component", colField, headerY, { width: 130 });
+    
+    doc.text(comparison?.leftVendorName || "Left Supplier", colLeft, headerY, {
       width: 140,
     });
     doc.text(
-      supplierRight?.supplierName || "Right Supplier",
+      comparison?.rightVendorName || "Right Supplier",
       colRight,
       headerY,
       { width: 140 },
     );
+    headerY = doc.y + 2;
+
+    doc.fontSize(7).font("Helvetica");
+    doc.text("(Benchmark Bid - Foreign / Imported Supplier)", colLeft, headerY, {
+      width: 160,
+    });
+    doc.text("(Local Bid - Domestic Supplier)", colRight, headerY, {
+      width: 140,
+    });
+
     doc.moveDown(0.5);
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
     doc.moveDown(0.3);
 
     const tableRows = [
-      [
-        "Local Bid Value",
-        fmt(bidLeft?.localBidValue),
-        fmt(bidRight?.localBidValue),
-      ],
-      [
-        "Shipping Cost",
-        fmt(bidLeft?.shippingCost),
-        fmt(bidRight?.shippingCost),
-      ],
-      [
-        "Handling Cost",
-        fmt(bidLeft?.handlingCost),
-        fmt(bidRight?.handlingCost),
-      ],
-      ["Custom Duty", fmt(bidLeft?.customDuty), fmt(bidRight?.customDuty)],
-      ["Premium", fmt(bidLeft?.premium), fmt(bidRight?.premium)],
-    ];
+  // Benchmark (Left)
+  
+  ["Benchmark Bid Type", comparison?.leftBenchmarkBidTypeText || "", "NA"],
+  ["Port of Export", comparison?.leftPortOfExportText || "", "NA"],
+  ["Benchmark Bid Value", fmt(comparison?.leftBenchmarkBidValue || ""),"NA"],
+  ["Development Type", comparison?.leftDevelopmentTypeText || "", "NA"],
+  ["Delivery Mode", comparison?.leftDeliveryModeText || "", "NA"],
+  ["Bid Value Range", comparison?.leftBidValueRangeText || "", "NA"],
+  ["Exceptional Weight / Curve Ratio", comparison?.leftCurveRatioText || "", "NA"],
+  ["End Use Cost", fmt(comparison?.leftEndUseCost || ""), "NA"],
+  ["Shipping Cost", fmt(comparison?.leftShippingCost || ""), "NA"],
+  ["Handling Cost", fmt(comparison?.leftHandlingCost || ""), "NA"],
+  ["Saudi Customs Rate (%)", fmt(comparison?.leftSaudiCustomsRate || ""), "NA"],
+  ["Saudi Manufacturer Premium (%)", fmt(comparison?.leftSaudiManufacturerPremium || ""), "NA"],
+  ["Freight", fmt(comparison?.leftFreight || ""), "NA"],
+  ["Duty", fmt(comparison?.leftDuty || ""), "NA"],
+  ["Premium", fmt(comparison?.leftPremium || ""), "NA"],
 
-    doc.font("Helvetica").fontSize(10);
-    tableRows.forEach(([field, left, right]) => {
-      const y = doc.y;
-      doc.text(field, colField, y, { width: 180 });
-      doc.text(left, colLeft, y, { width: 140 });
-      doc.text(right, colRight, y, { width: 140 });
-      doc.moveDown(0.5);
-    });
+  // // Local (Right)
+  ["Local Bid Type", "NA", comparison?.rightLocalBidTypeText || ""],
+  ["Local Bid Value", "NA",fmt(comparison?.rightLocalBidValue || "")],
+
+  ["Local End Use Cost", "NA", fmt(comparison?.rightLocalEndUseCost || "")],
+  // ["Total Local Bid", "NA", fmt(comparison?.rightTotalLocalBid || "")],
+
+  ["Equalization Basis", "NA", comparison?.rightEqualizationBasisText || ""],
+  //["Commodity Difference","NA",fmt(comparison?.rightCommodityDifference || "")],
+  ["Difference(%)","NA",comparison?.rightDifference || "" ]
+];
+
+  doc.font("Helvetica").fontSize(10);
+  tableRows.forEach(([field, left, right]) => {
+  const fieldHeight = doc.heightOfString(field, { width: 130 });
+  const leftHeight  = doc.heightOfString(left, { width: 140 });
+  const rightHeight = doc.heightOfString(right, { width: 140 });
+
+  const rowHeight = Math.max(fieldHeight, leftHeight, rightHeight);
+
+  const y = doc.y;
+
+  doc.text(field, colField, y, { width: 130 });
+  doc.text(left, colLeft, y, { width: 140 });
+  doc.text(right, colRight, y, { width: 140 });
+
+  // Move down by actual tallest content
+  doc.y = y + rowHeight + 5; // add small padding
+  });
 
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
     doc.moveDown(0.3);
@@ -441,32 +534,45 @@ function _generatePDFBuffer({
     doc.font("Helvetica-Bold").fontSize(11);
     const totalY = doc.y;
     doc.text("EQUALIZED BID TOTAL", colField, totalY, { width: 180 });
-    doc.text(fmt(comparison.equalizedBidLeft), colLeft, totalY, { width: 140 });
-    doc.text(fmt(comparison.equalizedBidRight), colRight, totalY, {
+    doc.text(fmt(comparison.leftEqualizedBid), colLeft, totalY, { width: 140 });
+    doc.text(fmt(comparison.rightTotalLocalBid), colRight, totalY, {
       width: 140,
     });
     doc.moveDown(1.5);
 
     // ── Winner ─────────────────────────────────────────────────
-    doc.fontSize(13).font("Helvetica-Bold").text("Result");
-    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-    doc.moveDown(0.3);
-    doc
-      .fontSize(12)
-      .font("Helvetica-Bold")
-      .fillColor("green")
-      .text(`🏆 Winner: ${winner?.supplierName || "N/A"}`, { align: "center" });
-    doc.fillColor("black");
+    // doc.fontSize(13).font("Helvetica-Bold").text("Result");
+    // doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    // doc.moveDown(0.3);
+    // doc
+    //   .fontSize(12)
+    //   .font("Helvetica-Bold")
+    //   .fillColor("green")
+    //   .text(`Winner: ${winner?.supplierName || "N/A"}`, { align: "center" });
+   const diff = Number(comparison?.rightCommodityDifference || 0);
+const diffperc = Number(comparison?.rightDifference || 0);
 
-    const saving = Math.abs(
-      Number(comparison.equalizedBidLeft || 0) -
-        Number(comparison.equalizedBidRight || 0),
-    );
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .moveDown(0.5)
-      .text(`Cost Advantage: ${fmt(saving)}`, { align: "center" });
+const y = doc.y;
+
+doc.fontSize(10).font("Helvetica").moveDown(0.5);
+
+if (diff > 0) doc.fillColor("green");
+else if (diff < 0) doc.fillColor("red");
+else doc.fillColor("black");
+
+// slightly shift left + control width to avoid wrapping
+doc.text(`Cost Advantage: ${fmt(diff)}`, 40, doc.y, {
+  width: 500,
+  align: "left"
+});
+
+doc.text(`Difference (%): ${diffperc}`, 40, doc.y, {
+  width: 500,
+  align: "left"
+});
+
+// reset color back (IMPORTANT for next text)
+doc.fillColor("black");
 
     // ── Footer ─────────────────────────────────────────────────
     doc.moveDown(3);

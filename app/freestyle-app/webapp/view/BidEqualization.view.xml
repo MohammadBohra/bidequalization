@@ -20,7 +20,7 @@
         busy="{appModel>/busy}"
         showTitleInHeaderContent="true"
         alwaysShowContentHeader="false"
-        showHeaderContent="true">
+        showHeaderContent="true" visible="false">
 
         <!-- ═══ HEADER ════════════════════════════════════════════════════ -->
         <uxap:headerTitle>
@@ -32,22 +32,22 @@
                     <Title text="Bid Equalization" level="H2" />
                 </uxap:snappedHeading>
                 <uxap:expandedContent>
-                    <FlexBox direction="Row" wrap="Wrap" alignItems="Center">
-                        <ObjectAttribute title="RFQ"       text="{appModel>/rfqEventTitle}" class="sapUiSmallMarginEnd" />
-                        <ObjectAttribute title="Item"      text="{appModel>/rfqItemTitle}"  class="sapUiSmallMarginEnd" />
-                        <ObjectAttribute title="Commodity" text="{appModel>/commodity}"     class="sapUiSmallMarginEnd" />
-                        <ObjectAttribute title="Quantity"  text="{appModel>/quantity}" />
+                    <FlexBox direction="Row" wrap="Wrap" alignItems="Center" id="headerData">
+                        <ObjectAttribute title="RFQ"       text="{rfq/eventName}" class="sapUiSmallMarginEnd" />
+                        <ObjectAttribute title="Item"      text="{itemNo}"  class="sapUiSmallMarginEnd" />
+                        <ObjectAttribute title="Commodity" text="{commodity}"     class="sapUiSmallMarginEnd" />
+                        <ObjectAttribute title="Quantity"  text="{quantity}" />
                     </FlexBox>
                 </uxap:expandedContent>
                 <uxap:snappedContent>
-                    <Text text="{appModel>/rfqEventTitle} – {appModel>/rfqItemTitle}" />
+                    <Text text="{rfq/eventName} – {itemNo}" />
                 </uxap:snappedContent>
             </uxap:ObjectPageDynamicHeaderTitle>
         </uxap:headerTitle>
         <uxap:headerContent>
             <FlexBox direction="Column">
-                <ObjectAttribute title="Active Formula" text="{appModel>/formulaName}" class="sapUiSmallMarginBottom" />
-                <Text text="{appModel>/formulaExpr}" renderWhitespace="true" />
+                <ObjectAttribute title="Formula" class="sapUiSmallMarginBottom" id="formulaExpr" text="{formulaExpr}"/>
+                
             </FlexBox>
         </uxap:headerContent>
 
@@ -59,36 +59,67 @@
                     <uxap:ObjectPageSubSection title="">
                         <uxap:blocks>
                             <Table
-                                id="comparisonsTable"
-                                items="{appModel>/comparisons}"
-                                noDataText="No saved comparisons yet."
-                                growing="true"
-                                growingThreshold="5"
-                                mode="SingleSelectLeft"
-                                selectionChange=".onComparisonSelected">
-                                <columns>
-                                    <Column><Text text="Date" /></Column>
-                                    <Column><Text text="Benchmark Supplier" /></Column>
-                                    <Column><Text text="Local Supplier" /></Column>
-                                    <Column hAlign="End"><Text text="Equalized (Benchmark)" /></Column>
-                                    <Column hAlign="End"><Text text="Equalized (Local)" /></Column>
-                                    <Column><Text text="Winner" /></Column>
-                                    <Column><Text text="Notes" /></Column>
-                                </columns>
-                                <items>
-                                    <ColumnListItem type="Active">
-                                        <cells>
-                                            <Text text="{appModel>createdAt}" />
-                                            <Text text="{appModel>supplierLeftName}" />
-                                            <Text text="{appModel>supplierRightName}" />
-                                            <ObjectNumber number="{appModel>equalizedBidLeft}"  unit="{appModel>currency}" state="None" />
-                                            <ObjectNumber number="{appModel>equalizedBidRight}" unit="{appModel>currency}" state="None" />
-                                            <ObjectStatus text="{appModel>winnerName}" state="Success" icon="sap-icon://status-completed" />
-                                            <Text text="{appModel>notes}" />
-                                        </cells>
-                                    </ColumnListItem>
-                                </items>
-                            </Table>
+    id="comparisonsTable"
+    items="{
+  path: '/BidComparisons',
+  parameters: {
+    expand: 'supplierLeft,supplierRight,winnerSupplier'
+  },
+  sorter: {
+    path: 'createdAt',
+    descending: true
+  }
+}"
+    noDataText="No saved comparisons yet."
+    growing="true"
+    growingThreshold="5"
+    mode="SingleSelectLeft"
+    selectionChange=".onComparisonSelected">
+
+    <columns>
+        <Column><Text text="Date" /></Column>
+        <Column><Text text="Benchmark Supplier" /></Column>
+        <Column><Text text="Local Supplier" /></Column>
+        <Column hAlign="End"><Text text="Equalized (Benchmark)" /></Column>
+        <Column hAlign="End"><Text text="Equalized (Local)" /></Column>
+       <Column hAlign="End"><Text text="Difference" /></Column>
+       <Column hAlign="End"><Text text="Difference (%)" /></Column>
+        <Column><Text text="Notes" /></Column>
+        <Column><Text text="PDF" /></Column>
+        <Column><Text text="Delete" /></Column>
+    </columns>
+
+    <items>
+        <ColumnListItem type="Active">
+            <cells>
+                <Text text="{createdAt}" />
+                <Text text="{leftVendorName}" />
+                <Text text="{rightVendorName}" />
+
+                <ObjectNumber number="{leftEqualizedBid}" />
+                <ObjectNumber number="{rightTotalLocalBid}" />
+                <ObjectNumber number="{rightCommodityDifference}" />
+                <ObjectNumber number="{rightDifference}" />
+
+                <Text text="{notes}" />
+                <Button
+                    icon="sap-icon://pdf-attachment"
+                    press=".onGeneratePDF" />
+
+                <Button
+                    icon="sap-icon://delete"
+                    type="Reject"
+                    press=".onDeleteComparison" />
+                
+                <!-- <Button
+                    icon="sap-icon://view"
+                    type="Default"
+                    press=".onDeleteComparison" /> -->
+            </cells>
+        </ColumnListItem>
+    </items>
+
+</Table>
                         </uxap:blocks>
                     </uxap:ObjectPageSubSection>
                 </uxap:subSections>
@@ -105,7 +136,7 @@
 
                                 <!-- ── LEFT: Benchmark Bid (Foreign/Imported) ── -->
                                 <Panel
-                                    headerText="🔹 Benchmark Bid – Foreign / Imported Supplier"
+                                    headerText="Benchmark Bid – Foreign / Imported Supplier"
                                     expandable="false"
                                     expanded="true"
                                     width="100%"
@@ -115,7 +146,7 @@
                                         editable="true"
                                         layout="ResponsiveGridLayout"
                                         labelSpanL="5" labelSpanM="5" labelSpanS="12"
-                                        inputSpanL="7" inputSpanM="7" inputSpanS="12"
+                                       
                                         columnsL="1" columnsM="1"
                                         class="sapUiSmallMargin">
                                         <f:content>
@@ -124,7 +155,7 @@
                                             <Label text="Vendor Name" required="true" />
                                             <Input
                                                 id="leftVendorInput"
-                                                value="{appModel>/left/vendorName}"
+                                                value="{leftVendorName}"
                                                 placeholder="Search vendor..."
                                                 showValueHelp="true"
                                                 valueHelpRequest=".onVendorHelp"
@@ -134,171 +165,329 @@
 
                                             <!-- Benchmark Bid Type -->
                                             <Label text="Benchmark Bid Type" />
-                                            <Select selectedKey="{appModel>/left/benchmarkBidType}" change=".onDropdownChange" width="100%">
-                                                <core:Item key=""    text="-- Select --" />
-                                                <core:Item key="FOB" text="FOB – Free On Board" />
-                                                <core:Item key="CIF" text="CIF – Cost, Insurance &amp; Freight" />
-                                                <core:Item key="CFR" text="CFR – Cost and Freight" />
-                                                <core:Item key="EXW" text="EXW – Ex Works" />
-                                                <core:Item key="DDP" text="DDP – Delivered Duty Paid" />
-                                                <core:Item key="DAP" text="DAP – Delivered at Place" />
-                                                <core:Item key="FAS" text="FAS – Free Alongside Ship" />
-                                            </Select>
+                                            
+                                            <Select id="leftBenchmarkBidType" selectedKey="{
+    path: 'leftBenchmarkBidType',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'BID_TYPE' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
 
                                             <!-- Port of Export -->
                                             <Label text="Port of Export" />
-                                            <Select selectedKey="{appModel>/left/portOfExport}" change=".onDropdownChange" width="100%">
-                                                <core:Item key=""          text="-- Select --" />
-                                                <core:Item key="JED"       text="Jeddah Islamic Port" />
-                                                <core:Item key="DAM"       text="Dammam – King Abdul Aziz Port" />
-                                                <core:Item key="DXB"       text="Dubai – Jebel Ali Port" />
-                                                <core:Item key="SHA"       text="Shanghai Port" />
-                                                <core:Item key="ROT"       text="Rotterdam Port" />
-                                                <core:Item key="HAM"       text="Hamburg Port" />
-                                                <core:Item key="SGP"       text="Singapore Port" />
-                                                <core:Item key="OTHER"     text="Other" />
-                                            </Select>
+                                            <Select id="leftPortOfExport" selectedKey="{
+    path: 'leftPortOfExport',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'PORT' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
 
                                             <!-- Benchmark Bid Value -->
                                             <Label text="Benchmark Bid Value" required="true" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input value="{appModel>/left/benchmarkBidValue}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
-                                                <Select selectedKey="{appModel>/left/benchmarkBidCurrency}" change=".onDropdownChange" width="33%">
-                                                    <core:Item key="SAR" text="SAR" />
-                                                    <core:Item key="USD" text="USD" />
-                                                    <core:Item key="EUR" text="EUR" />
-                                                    <core:Item key="GBP" text="GBP" />
-                                                    <core:Item key="AED" text="AED" />
-                                                    <core:Item key="CNY" text="CNY" />
-                                                    <core:Item key="JPY" text="JPY" />
-                                                </Select>
+                                                <Input id="leftBenchmarkBidValue" value="{
+    path: 'leftBenchmarkBidValue',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }"
+                                                placeholder="0.00" width="65%" class="sapUiTinyMarginEnd"/>
+                                               <Select id="leftBenchmarkCurrency" selectedKey="{
+    path: 'leftBenchmarkCurrency',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
                                             </FlexBox>
 
                                             <!-- Development Type -->
                                             <Label text="Development Type" />
-                                            <Select selectedKey="{appModel>/left/developmentType}" change=".onDropdownChange" width="100%">
-                                                <core:Item key="PO"          text="PO – Purchase Order" />
-                                                <core:Item key="SPO"         text="SPO – Standing Purchase Order" />
-                                                <core:Item key="CONTRACT"    text="Contract" />
-                                                <core:Item key="BLANKET"     text="Blanket PO" />
-                                            </Select>
+                                             <Select id="leftDevelopmentType" selectedKey="{
+    path: 'leftDevelopmentType',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'DEV_TYPE' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
 
                                             <!-- Delivery Mode -->
                                             <Label text="Delivery Mode" />
-                                            <Select selectedKey="{appModel>/left/deliveryMode}" change=".onDropdownChange" width="100%">
-                                                <core:Item key=""           text="-- Select --" />
-                                                <core:Item key="SEA"        text="Sea Freight" />
-                                                <core:Item key="AIR"        text="Air Freight" />
-                                                <core:Item key="LAND"       text="Land Transport" />
-                                                <core:Item key="MULTI"      text="Multimodal" />
-                                            </Select>
+                                            <Select id="leftDeliveryMode"
+                                            selectedKey="{
+    path: 'leftDeliveryMode',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'DELIVERY_MODE' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
 
                                             <!-- Benchmark Bid Value Range -->
                                             <Label text="Bid Value Range" />
-                                            <Select selectedKey="{appModel>/left/bidValueRange}" change=".onDropdownChange" width="100%">
-                                                <core:Item key=""     text="-- Select --" />
-                                                <core:Item key="5"    text="± 5%" />
-                                                <core:Item key="10"   text="± 10%" />
-                                                <core:Item key="15"   text="± 15%" />
-                                                <core:Item key="20"   text="± 20%" />
-                                                <core:Item key="CUST" text="Custom" />
-                                            </Select>
+                                            <Select id="leftBidValueRange" selectedKey="{
+    path: 'leftBidValueRange',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'BENCH_BID_VAL_RANGE' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
 
                                             <!-- Exceptional Weight / Curve Ratio -->
                                             <Label text="Exceptional Weight / Curve Ratio" />
-                                            <Select selectedKey="{appModel>/left/curveRatio}" change=".onDropdownChange" width="100%">
-                                                <core:Item key=""        text="-- Select --" />
-                                                <core:Item key="STD"     text="Standard" />
-                                                <core:Item key="LIGHT"   text="Light" />
-                                                <core:Item key="HEAVY"   text="Heavy" />
-                                                <core:Item key="CUSTOM"  text="Custom" />
+                                            <Select id="leftCurveRatio" selectedKey="{
+    path: 'leftCurveRatio',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }" items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CUBE_RATIO' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
                                             </Select>
 
                                             <!-- Benchmark End Use Cost -->
                                             <Label text="Benchmark End Use Cost" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input value="{appModel>/left/endUseCost}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
-                                                <Select selectedKey="{appModel>/left/endUseCostCurrency}" change=".onDropdownChange" width="33%">
-                                                    <core:Item key="SAR" text="SAR" />
-                                                    <core:Item key="USD" text="USD" />
-                                                    <core:Item key="EUR" text="EUR" />
-                                                    <core:Item key="GBP" text="GBP" />
-                                                    <core:Item key="AED" text="AED" />
-                                                </Select>
+                                                <Input id='leftEndUseCost' value="{
+    path: 'leftEndUseCost',
+    
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }" 
+                                                placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select id="leftEndUseCostCurrency" selectedKey="{
+    path: 'leftEndUseCostCurrency',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }" 
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
                                             </FlexBox>
 
                                             <!-- Shipping Cost -->
                                             <Label text="Shipping Cost" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input value="{appModel>/left/shippingCost}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
-                                                <Select selectedKey="{appModel>/left/shippingCostCurrency}" change=".onDropdownChange" width="33%">
-                                                    <core:Item key="SAR" text="SAR" />
-                                                    <core:Item key="USD" text="USD" />
-                                                    <core:Item key="EUR" text="EUR" />
-                                                    <core:Item key="GBP" text="GBP" />
-                                                    <core:Item key="AED" text="AED" />
-                                                </Select>
+                                            <Input id="leftShippingCost" value="{
+    path: 'leftShippingCost',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }"
+
+  placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+    <Select id="leftShippingCostCurrency" selectedKey="{
+    path: 'leftShippingCostCurrency',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }" 
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
                                             </FlexBox>
 
                                             <!-- Handling Cost -->
                                             <Label text="Handling Cost" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input value="{appModel>/left/handlingCost}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
-                                                <Select selectedKey="{appModel>/left/handlingCostCurrency}" change=".onDropdownChange" width="33%">
-                                                    <core:Item key="SAR" text="SAR" />
-                                                    <core:Item key="USD" text="USD" />
-                                                    <core:Item key="EUR" text="EUR" />
-                                                    <core:Item key="GBP" text="GBP" />
-                                                    <core:Item key="AED" text="AED" />
-                                                </Select>
+                                                <Input id="leftHandlingCost"
+                                                value="{
+    path: 'leftHandlingCost',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }"
+                                                placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
+                                                <Select id="leftHandlingCostCurrency" selectedKey="{
+    path: 'leftHandlingCostCurrency',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
                                             </FlexBox>
 
                                             <!-- Saudi Customs Rate -->
                                             <Label text="Saudi Customs Rate (%)" />
-                                            <Input value="{appModel>/left/saudiCustomsRate}" type="Number" placeholder="0.00" width="100%" />
+                                            <Input id="leftSaudiCustomsRate"  value="{
+    path: 'leftSaudiCustomsRate',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }" placeholder="0.00" width="100%" />
 
                                             <!-- Saudi Manufacturer Premium -->
                                             <Label text="Saudi Manufacturer Premium (%)" />
-                                            <Input value="{appModel>/left/saudiManufacturerPremium}" type="Number" placeholder="0.00" width="100%" />
+                                            <Input id="leftSaudiManufacturerPremium" value="{
+    path: 'leftSaudiManufacturerPremium',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }"
+                                            placeholder="0.00" width="100%" />
 
                                             <!-- Freight (Traffic) -->
                                             <Label text="Freight (Traffic)" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input value="{appModel>/left/freight}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
-                                                <Select selectedKey="{appModel>/left/freightCurrency}" change=".onDropdownChange" width="33%">
-                                                    <core:Item key="SAR" text="SAR" />
-                                                    <core:Item key="USD" text="USD" />
-                                                    <core:Item key="EUR" text="EUR" />
-                                                    <core:Item key="GBP" text="GBP" />
-                                                    <core:Item key="AED" text="AED" />
-                                                </Select>
+                                                <Input id="leftFreight" value="{
+    path: 'leftFreight',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }" 
+  placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" editable="false" />
+
+                                                <Select id="leftFreightCurrency" 
+                                                editable="false" selectedKey="{
+    path: 'leftFreightCurrency',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+    
+</Select>
                                             </FlexBox>
 
                                             <!-- Duty -->
                                             <Label text="Duty" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input value="{appModel>/left/duty}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
-                                                <Select selectedKey="{appModel>/left/dutyCurrency}" change=".onDropdownChange" width="33%">
-                                                    <core:Item key="SAR" text="SAR" />
-                                                    <core:Item key="USD" text="USD" />
-                                                    <core:Item key="EUR" text="EUR" />
-                                                    <core:Item key="GBP" text="GBP" />
-                                                    <core:Item key="AED" text="AED" />
-                                                </Select>
+                                                <Input id="leftDuty" value="{
+    path: 'leftDuty',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }"
+   placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" editable="false" />
+                                                <Select id="leftDutyCurrency" selectedKey="{
+    path: 'leftDutyCurrency',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }" editable="false"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
                                             </FlexBox>
 
                                             <!-- Premium -->
                                             <Label text="Premium" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input value="{appModel>/left/premium}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
-                                                <Select selectedKey="{appModel>/left/premiumCurrency}" change=".onDropdownChange" width="33%">
-                                                    <core:Item key="SAR" text="SAR" />
-                                                    <core:Item key="USD" text="USD" />
-                                                    <core:Item key="EUR" text="EUR" />
-                                                    <core:Item key="GBP" text="GBP" />
-                                                    <core:Item key="AED" text="AED" />
-                                                </Select>
+                                                <Input id="leftPremium" value="{
+    path: 'leftPremium',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" editable="false"/>
+                                                <Select id="leftPremiumCurrency" editable="false" selectedKey="{
+    path: 'leftPremiumCurrency',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
+ </FlexBox>
+
+
+ <!-- LDOR -->
+                                            <Label text="LDOR" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input id="leftldor" value="{
+    path: 'leftldor',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" editable="false"/>
+                                                <Select id="leftldorCurrency" editable="false" selectedKey="{
+    path: 'leftPremiumCurrency',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
+ </FlexBox>
+
+
+                                        <!-- Equalized Bid -->
+                                            <Label text="Equalized Bid" />
+                                            <FlexBox direction="Row" alignItems="Center">
+                                                <Input id="leftEqualizedBid" editable="false"
+                                                value="{
+    path: 'leftEqualizedBid',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }"/>
                                             </FlexBox>
+
+
+
+
+
+                                           
 
                                         </f:content>
                                     </f:SimpleForm>
@@ -316,7 +505,7 @@
                                         editable="true"
                                         layout="ResponsiveGridLayout"
                                         labelSpanL="5" labelSpanM="5" labelSpanS="12"
-                                        inputSpanL="7" inputSpanM="7" inputSpanS="12"
+                                        
                                         columnsL="1" columnsM="1"
                                         class="sapUiSmallMargin">
                                         <f:content>
@@ -325,7 +514,8 @@
                                             <Label text="Vendor Name" required="true" />
                                             <Input
                                                 id="rightVendorInput"
-                                                value="{appModel>/right/vendorName}"
+                                                value="{path: 'rightVendorName',
+                                                mode:'sap.ui.model.BindingMode.OneWay'}"                                                
                                                 placeholder="Search vendor..."
                                                 showValueHelp="true"
                                                 valueHelpRequest=".onVendorHelp"
@@ -335,45 +525,72 @@
 
                                             <!-- Local Bid Type -->
                                             <Label text="Local Bid Type" />
-                                            <Select selectedKey="{appModel>/right/localBidType}" change=".onDropdownChange" width="100%">
-                                                <core:Item key=""      text="-- Select --" />
-                                                <core:Item key="DDP"   text="DDP – Delivered Duty Paid" />
-                                                <core:Item key="DAP"   text="DAP – Delivered at Place" />
-                                                <core:Item key="EXW"   text="EXW – Ex Works" />
-                                                <core:Item key="LOCAL" text="Local Supply" />
-                                            </Select>
+                                            <Select id="rightLocalBidType" selectedKey="{
+    path: 'rightLocalBidType',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'LOCAL_BID_TYPE' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
 
                                             <!-- Local Bid Value -->
                                             <Label text="Local Bid Value" required="true" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input value="{appModel>/right/localBidValue}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
-                                                <Select selectedKey="{appModel>/right/localBidCurrency}" change=".onDropdownChange" width="33%">
-                                                    <core:Item key="SAR" text="SAR" />
-                                                    <core:Item key="USD" text="USD" />
-                                                    <core:Item key="EUR" text="EUR" />
-                                                    <core:Item key="GBP" text="GBP" />
-                                                    <core:Item key="AED" text="AED" />
-                                                </Select>
+                                                <Input id="rightLocalBidValue" value="{
+    path: 'rightLocalBidValue',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" change=".onLocalValuesChange" />
+                                                <Select id="rightLocalBidCurrency" selectedKey="{
+    path: 'leftHandlingCostCurrency',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
                                             </FlexBox>
 
                                             <!-- Local End Use Cost -->
                                             <Label text="Local End Use Cost" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input value="{appModel>/right/localEndUseCost}" type="Number" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" />
-                                                <Select selectedKey="{appModel>/right/localEndUseCostCurrency}" change=".onDropdownChange" width="33%">
-                                                    <core:Item key="SAR" text="SAR" />
-                                                    <core:Item key="USD" text="USD" />
-                                                    <core:Item key="EUR" text="EUR" />
-                                                    <core:Item key="GBP" text="GBP" />
-                                                    <core:Item key="AED" text="AED" />
-                                                </Select>
+                                                <Input id="rightLocalEndUseCost" 
+                                                value="{
+    path: 'rightLocalEndUseCost',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }" placeholder="0.00" width="65%" class="sapUiTinyMarginEnd" change=".onLocalValuesChange" />
+                                                <Select id="rightLocalEndUseCostCurrency"
+    items="{
+        path: 'vh>/SelectItems',
+        filters: [{ path: 'category', operator: 'EQ', value1: 'CURRENCY' }],
+        sorter: { path: 'sequence' }
+    }">
+
+    <core:Item key="{vh>code}" text="{vh>text}" />
+</Select>
                                             </FlexBox>
 
                                             <!-- Total Local Bid -->
                                             <Label text="Total Local Bid" />
-                                            <Input
-                                                value="{appModel>/right/totalLocalBid}"
-                                                type="Number"
+                                            <Input id="rightTotalLocalBid"
+                                                value="{
+    path: 'rightTotalLocalBid',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }"
                                                 placeholder="Calculated automatically"
                                                 editable="false"
                                                 width="100%"
@@ -381,7 +598,11 @@
 
                                             <!-- Equalization Basis -->
                                             <Label text="Equalization Basis" />
-                                            <Select selectedKey="{appModel>/right/equalizationBasis}" change=".onDropdownChange" width="100%">
+                                            <Select id="rightEqualizationBasis" 
+                                            selectedKey="{
+    path: 'rightEqualizationBasis',
+    mode: 'sap.ui.model.BindingMode.OneWay'
+  }" change=".onDropdownChange" width="100%">
                                                 <core:Item key=""          text="-- Select --" />
                                                 <core:Item key="PROVINCE"  text="Province Discussion" />
                                                 <core:Item key="NATIONAL"  text="National Average" />
@@ -390,23 +611,30 @@
                                             </Select>
 
                                             <!-- Commodity Difference -->
-                                            <Label text="Commodity Difference" />
-                                            <Input value="{appModel>/right/commodityDifference}" type="Number" placeholder="0.00" width="100%" />
+                                            <Label text="Difference" />
+                                            <Input id="rightCommodityDifference"
+                                            editable="false" 
+                                            value="{
+    path: 'rightCommodityDifference',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }" placeholder="0.00" width="100%" />
 
                                             <!-- Difference (calculated) -->
-                                            <Label text="Difference" />
+                                            <Label text="Difference (%)" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input
-                                                    value="{appModel>/right/difference}"
-                                                    type="Number"
+                                                <Input id="rightDifference"
+                                                    value="{
+    path: 'rightDifference',
+    mode:'sap.ui.model.BindingMode.OneWay',
+    type: 'sap.ui.model.odata.type.Decimal',
+    constraints: { precision: 15, scale: 2 }
+  }"
                                                     placeholder="Calculated"
                                                     editable="false"
                                                     width="100%" />
-                                                <ObjectStatus
-                                                    visible="{= !!${appModel>/right/difference} }"
-                                                    text="{= parseFloat(${appModel>/right/difference}) >= 0 ? 'Local Higher' : 'Local Lower' }"
-                                                    state="{= parseFloat(${appModel>/right/difference}) >= 0 ? 'Error' : 'Success' }"
-                                                    class="sapUiSmallMarginBegin" />
+                                                
                                             </FlexBox>
 
                                         </f:content>
@@ -417,8 +645,8 @@
                                         text="🏆 Winner: {appModel>/winnerName}"
                                         type="Success"
                                         showIcon="true"
-                                        visible="{appModel>/calculated}"
-                                        class="sapUiSmallMargin sapUiSmallMarginTop" />
+                                        visible="false"
+                                        class="sapUiSmallMargin sapUiSmallMarginTop"/>
 
                                 </Panel>
                             </l:Grid>

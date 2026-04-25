@@ -7,3 +7,5 @@ sqlite.db
 gen/
 coverage/
 .vscode/
+# added by cds
+.cdsrc-private.json

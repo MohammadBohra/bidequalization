@@ -2,13 +2,13 @@
  * Bid Equalization Service – CDS Service Definition
  * =====================================================================
  * Exposes entities and custom actions for the Bid Equalization app.
- * Base path: /api
+
  * =====================================================================
  */
 
 using BidEqualization from '../db/schema';
 
-service BidEqualizationService @(path: '/api') {
+service BidEqualizationService @(requires: 'authenticated-user'){
 
     // ─────────────────────────────────────────────
     // Entity Projections
@@ -25,6 +25,8 @@ service BidEqualizationService @(path: '/api') {
     entity BidComparisons as projection on BidEqualization.BidComparison;
 
     entity BidFormulas    as projection on BidEqualization.BidFormula;
+    entity SelectItems as projection on BidEqualization.SelectItems;
+    
 
     // ─────────────────────────────────────────────
     // Actions
@@ -35,15 +37,44 @@ service BidEqualizationService @(path: '/api') {
      * Uses the active BidFormula expression to compute totals.
      * Returns equalized values and the winning supplier ID.
      */
-    action calculateComparison(rfqItemID: UUID,
-                               supplierLeft: UUID,
-                               supplierRight: UUID) returns {
-        equalizedLeft  : Decimal;
-        equalizedRight : Decimal;
-        winner         : UUID;
-        formulaName    : String;
-        formulaExpr    : String;
-    };
+    // action calculateComparison(rfqItemID: UUID,
+    //                            supplierLeft: UUID,
+    //                            supplierRight: UUID) returns {
+    //     equalizedLeft  : Decimal;
+    //     equalizedRight : Decimal;
+    //     winner         : UUID;
+    //     formulaName    : String;
+    //     formulaExpr    : String;
+    // };
+
+
+    action calculateComparison(
+    leftBenchmarkBidType   : String,
+    
+    leftDevelopmentType    : String,
+    leftDeliveryMode       : String,
+    leftBidValue           : Decimal(15,2),
+    leftBidValueRange      : String,
+    leftExceptionalWeight  : String,
+    leftShippingCost       : Decimal(15,2),
+    leftHandlingCost       : Decimal(15,2),
+    leftEUC                : Decimal(15,2),
+    leftSaudiCustomsRate   : Decimal(5,2),
+    leftSaudiManufacturerPremium: Decimal(5,2),
+
+    
+    rightLocalBidType      : String,
+    
+    
+    rightBidValue          : Decimal(15,2),
+    
+    rightEUC               : Decimal(15,2)
+
+) returns {
+    leftEqualizedBid  : Decimal(15,2);
+    formulaName   : String;
+    formulaExpr   : String;
+};
 
     /**
      * Persist a completed comparison to the BidComparison table.
@@ -67,7 +98,8 @@ service BidEqualizationService @(path: '/api') {
      * Generate a PDF report for a saved BidComparison.
      * Returns raw PDF binary data.
      */
-    action generatePDF(comparisonID: UUID)          returns LargeBinary;
+    // action generatePDF(comparisonID: UUID)          returns LargeBinary;
+    function generatePDF(comparisonID: UUID) returns LargeBinary;
 }
 
 // ─────────────────────────────────────────────

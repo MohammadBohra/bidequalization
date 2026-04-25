@@ -10,11 +10,6 @@ server:
       afterMiddleware: compression
       configuration:
         ignoreCertErrors: false # If set to true, certificate errors will be ignored. E.g. self-signed certificates will be accepted
-        backend:
-          - path: /api
-            url: http://localhost:4004
-          - path: /freestyle-app
-            url: http://localhost:4004
         ui5:
           path:
             - /resources

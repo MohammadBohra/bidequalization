@@ -6,6 +6,15 @@ sap.ui.define(
     return ControllerExtension.extend(
       "rfqevents.ext.controller.RFQEventsObjectPageExt",
       {
+        onInit: function () {
+  const oRouter = this.base.getExtensionAPI().getRouter();
+console.log("in int *************************** RFQEventsObjectPageExt");
+  oRouter.getRoute("RFQEventsObjectPage").attachPatternMatched(
+    this._onRouteMatched,
+    this
+  );
+},
+
         /**
          * Custom table action - opens the Bid Equalization freestyle app
          * for the selected RFQ Item.
@@ -40,13 +49,18 @@ sap.ui.define(
           MessageToast.show("Opening Bid Equalization for: " + sCommodity, {
             duration: 2000,
           });
+          var sUrl = "https://sao-corp-dev-9bgapsnr.launchpad.cfapps.sa30.hana.ondemand.com/230b382f-590f-406d-b028-cc31d3139fca.bidequalizationservice.bidequalization-1.0.0/index.html" + "?rfqItemID=" + encodeURIComponent(sItemId);
 
-          var sUrl =
-            "/freestyle-app/webapp/index.html?rfqItemID=" +
-            encodeURIComponent(sItemId);
           setTimeout(function () {
             window.open(sUrl, "_blank");
           }, 500);
+
+          // var sUrl =
+          //   "/freestyle-app/webapp/index.html?rfqItemID=" +
+          //   encodeURIComponent(sItemId);
+          // setTimeout(function () {
+          //   window.open(sUrl, "_blank");
+          // }, 500);
         },
       },
     );

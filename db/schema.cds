@@ -21,8 +21,8 @@ using {
 // ─────────────────────────────────────────────
 // RFQ Event (Header)
 // ─────────────────────────────────────────────
-entity RFQEvent : cuid, managed {
-    eventID     : String(20)                @title: 'RFQ ID';
+entity RFQEvent : managed {
+    key eventID     : String(20)                @title: 'RFQ ID';
     eventName   : String(150)               @title: 'RFQ Name';
     description : String(500)               @title: 'Description';
     status      : String(20) default 'Open' @title: 'Status';
@@ -81,17 +81,89 @@ entity SupplierBid : cuid, managed {
 // ─────────────────────────────────────────────
 // Bid Comparison (Saved comparison results)
 // ─────────────────────────────────────────────
+
 entity BidComparison : cuid, managed {
     rfqItem           : Association to RFQItem;
     supplierLeft      : Association to Supplier;
     supplierRight     : Association to Supplier;
 
-    // Equalized totals computed by the service action
-    equalizedBidLeft  : Decimal(15, 2) @title: 'Equalized Bid (Left)';
-    equalizedBidRight : Decimal(15, 2) @title: 'Equalized Bid (Right)';
+    leftEqualizedBid  : Decimal(15, 2);
+    equalizedBidRight : Decimal(15, 2);
     winnerSupplier    : Association to Supplier;
 
-    notes             : String(500)    @title: 'Notes';
+    notes             : String(500);
+
+    // ========================
+    // LEFT (Benchmark Supplier)
+    // ========================
+    leftVendorName : String(100);
+
+    leftBenchmarkBidType     : String(20);
+    leftBenchmarkBidTypeText : String(100);
+
+    leftPortOfExport     : String(50);
+    leftPortOfExportText : String(100);
+
+    leftBenchmarkBidValue : Decimal(15,2);
+    leftBenchmarkCurrency : String(3);
+
+    leftDevelopmentType     : String(20);
+    leftDevelopmentTypeText : String(50);
+
+    leftDeliveryMode     : String(20);
+    leftDeliveryModeText : String(50);
+
+    leftBidValueRange     : String(20);
+    leftBidValueRangeText : String(50);
+
+    leftCurveRatio     : String(20);
+    leftCurveRatioText : String(20);
+
+    leftEndUseCost         : Decimal(15,2);
+    leftEndUseCostCurrency : String(3);
+
+    leftShippingCost         : Decimal(15,2);
+    leftShippingCostCurrency : String(3);
+
+    leftHandlingCost         : Decimal(15,2);
+    leftHandlingCostCurrency : String(3);
+
+    leftSaudiCustomsRate        : Decimal(5,2);
+    leftSaudiManufacturerPremium: Decimal(5,2);
+
+    leftFreight         : Decimal(15,2);
+    leftFreightCurrency : String(3);
+
+    leftDuty         : Decimal(15,2);
+    leftDutyCurrency : String(3);
+
+    leftPremium         : Decimal(15,2);
+    leftPremiumCurrency : String(3);
+
+    // ========================
+    // RIGHT (Local Supplier)
+    // ========================
+    rightVendorName : String(100);
+
+    rightLocalBidType     : String(20);
+    rightLocalBidTypeText : String(100);
+
+    rightLocalBidValue    : Decimal(15,2);
+    rightLocalBidCurrency : String(3);
+
+    rightLocalEndUseCost         : Decimal(15,2);
+    rightLocalEndUseCostCurrency : String(3);
+
+    rightTotalLocalBid : Decimal(15,2);
+
+    rightEqualizationBasis     : String(20);
+    rightEqualizationBasisText : String(100);
+
+    rightCommodityDifference : Decimal(15,2);
+    rightDifference          : Decimal(15,2);
+
+    formulaExpr : String;
+    leftldor: Decimal(15,2);
 }
 
 // ─────────────────────────────────────────────
@@ -99,10 +171,35 @@ entity BidComparison : cuid, managed {
 // ─────────────────────────────────────────────
 entity BidFormula : cuid, managed {
     name        : String(100)           @title: 'Formula Name';
-    // Expression uses variable names matching SupplierBid fields:
-    // localBidValue, shippingCost, handlingCost, customDuty, premium
-    // Example: "localBidValue + shippingCost + handlingCost + customDuty + premium"
     expression  : String(500)           @title: 'Expression';
+    trafficexpression  : String(500)           @title: 'Expression';
+    dutyexpression  : String(500)           @title: 'Expression';
+    premiumexpression  : String(500)           @title: 'Expression';
     description : String(250)           @title: 'Description';
     isActive    : Boolean default false @title: 'Is Active';
+
+    // ===== LEFT CONDITIONS =====
+  leftBenchmarkBidType      : String;
+  leftDevelopmentType       : String;
+  leftDeliveryMode          : String;
+
+  leftBidValueRange           : String;
+
+  leftExceptionalWeight     : String;
+
+  // ===== RIGHT CONDITIONS (if needed for matching) =====  
+  rightLocalBidType         : String;
+  ldorexpression  : String(500)
+}
+
+
+
+entity SelectItems {
+    key ID        : UUID;
+    category      : String(50);   
+    code          : String(20);   
+    text          : String(255);  
+    sequence      : Integer;      
+    isActive      : Boolean default true;
+
 }

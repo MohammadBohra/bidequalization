@@ -17,11 +17,23 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/api/",
+        "uri": "/odata/v4/bid-equalization/",
         "type": "OData",
         "settings": {
           "annotations": [],
-          "odataVersion": "4.01"
+          "odataVersion": "4.0"
+        }
+      }
+    },
+    "crossNavigation": {
+      "inbounds": {
+        "rfq-events-display": {
+          "semanticObject": "rfqevents",
+          "action": "display",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
         }
       }
     }
@@ -107,6 +119,7 @@
           "options": {
             "settings": {
               "contextPath": "/RFQEvents",
+              "initialLoad": "Enabled",
               "variantManagement": "Page",
               "navigation": {
                 "RFQEvents": {
@@ -184,5 +197,9 @@
     "app": {
       "enableLazyLoading": true
     }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "bidequalization.service"
   }
 }

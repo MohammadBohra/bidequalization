@@ -18,9 +18,11 @@ sap.ui.define(
       init: function () {
         // Call parent init
         UIComponent.prototype.init.apply(this, arguments);
+        
 
         // Initialize router
         this.getRouter().initialize();
+        //this.setModel(oODataModel);
       },
     });
   },

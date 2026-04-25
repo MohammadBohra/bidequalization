@@ -7,10 +7,28 @@
     "description": "Freestyle UI5 app for comparing supplier bids",
     "dataSources": {
       "BidEqualizationService": {
-        "uri": "/api/",
+        "uri": "/odata/v4/bid-equalization/",
         "type": "OData",
         "settings": {
           "odataVersion": "4.0"
+        }
+      }
+    },
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "i18n": "i18n/i18n.properties",
+    "crossNavigation": {
+      "inbounds": {
+        "rfq-events-display": {
+          "semanticObject": "bidequalization",
+          "action": "display",
+          "signature": {
+            "parameters": {"rfqItemID": {
+              "required": false
+            }},
+            "additionalParameters": "allowed"
+          }
         }
       }
     }
@@ -42,6 +60,16 @@
     },
     "models": {
       "": {
+        "dataSource": "BidEqualizationService",
+        "preload": true,
+        "settings": {
+          "synchronizationMode": "None",
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      },
+      "vh": {
         "dataSource": "BidEqualizationService",
         "preload": true,
         "settings": {
@@ -150,5 +178,9 @@
         }
       }
     }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "bidequalization.service"
   }
 }
