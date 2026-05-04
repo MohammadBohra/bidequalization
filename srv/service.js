@@ -15,6 +15,7 @@ const cds = require("@sap/cds");
 
 module.exports = class BidEqualizationService extends cds.ApplicationService {
   async init() {
+    const forum = await cds.connect.to('ForumService');
     // ─────────────────────────────────────────────────────────────
     // ACTION: calculateComparison
     // ─────────────────────────────────────────────────────────────
@@ -63,6 +64,22 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
 });
 
 
+this.on('READ', 'RFQEvents', async (req) => {
+
+  const events = await forum.run(req.query);
+  if (!req.query.SELECT?.expand) return events;
+
+  const tx = cds.tx(req);
+  const items = await tx.run(SELECT.from('RFQItem'));
+
+  return events.map(e => ({
+    ...e,
+    items: items.filter(i =>
+      i.rfq_eventID === e.EventId &&
+      i.rfq_sourcingProject === e.SourcingProject
+    )
+  }));
+});
 
     this.on("calculateComparison1", async (req) => {
       const { rfqItemID, supplierLeft, supplierRight } = req.data;

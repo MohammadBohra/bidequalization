@@ -45,6 +45,13 @@
           "destination": "Aramco-e-Marketplace"
         }
       },
+      "ForumService": {
+      "kind": "odata",
+      "model": "srv/external",
+      "credentials": {
+        "destination": "FORUMAPI"
+      }
+    },
       "uaa": {
         "kind": "xsuaa"
       },

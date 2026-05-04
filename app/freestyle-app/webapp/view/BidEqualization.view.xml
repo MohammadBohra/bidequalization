@@ -648,7 +648,7 @@
                                         visible="false"
                                         class="sapUiSmallMargin sapUiSmallMarginTop"/>
 
-                                        <VBox>
+                                        <VBox width="60%">
   <Toolbar>
     <Title text="Additional Fields"/>
     <ToolbarSpacer/>
@@ -657,8 +657,8 @@
 
   <Table items="{appModel>/rightAdditionalFields}">
     <columns>
-      <Column><Text text="Field"/></Column>
-      <Column><Text text="Value"/></Column>
+      <Column width="40%"><Text text="Field"/></Column>
+      <Column width="60%"><Text text="Value"/></Column>
     </columns>
 
     <items>

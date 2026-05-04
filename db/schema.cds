@@ -17,20 +17,31 @@ using {
     cuid,
     managed
 } from '@sap/cds/common';
+using { ForumService as external } from '../srv/external/ForumService';
 
 // ─────────────────────────────────────────────
 // RFQ Event (Header)
 // ─────────────────────────────────────────────
-entity RFQEvent : managed {
-    key eventID     : String(20)                @title: 'RFQ ID';
-    eventName   : String(150)               @title: 'RFQ Name';
-    description : String(500)               @title: 'Description';
-    status      : String(20) default 'Open' @title: 'Status';
+// entity RFQEvent : managed {
+//     key eventID     : String(20)                @title: 'RFQ ID';
+//     eventName   : String(150)               @title: 'RFQ Name';
+//     description : String(500)               @title: 'Description';
+//     status      : String(20) default 'Open' @title: 'Status';
 
-    // Composition – items owned by this RFQ
-    items       : Composition of many RFQItem
-                      on items.rfq = $self;
-}
+//     // Composition – items owned by this RFQ
+//     items       : Composition of many RFQItem
+//                       on items.rfq = $self;
+// }
+entity RFQEvent as projection on external.Events {
+    key EventId           as eventID,
+    key SourcingProject as sourcingProject,
+    EventDescription      as eventName,
+    EventDescription      as description,
+    EventStatus           as status
+    // items       : Composition of many RFQItem
+    //                   on items.rfq = $self
+};
+
 
 // ─────────────────────────────────────────────
 // RFQ Item (Line Item)

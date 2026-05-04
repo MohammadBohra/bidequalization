@@ -1,0 +1,13 @@
+{
+  "destinations": [
+    {
+      "name": "FORUMAPI",
+      "url": "https://development-development-qaforum-srv.cfapps.sa30.hana.ondemand.com/odata/v4/forum",
+      "authentication": "OAuth2ClientCredentials",
+      "clientId": "sb-qaforum!t1157",
+      "clientSecret": "f4da514a-0735-4766-a69d-ae3001d7fd7e$UjZWXXSU7QUh2jRKUvXoUr-hzR4R89l2VlzNM3Hcg7w=",
+      "tokenServiceURL": "https://sao-corp-dev-9bgapsnr.authentication.sa30.hana.ondemand.com/oauth/token",
+      "clientAuthentication": "Basic"
+    }
+  ]
+}

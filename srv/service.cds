@@ -8,6 +8,7 @@
 
 using BidEqualization from '../db/schema';
 
+
 service BidEqualizationService @(requires: 'authenticated-user'){
 
     // ─────────────────────────────────────────────
@@ -15,6 +16,9 @@ service BidEqualizationService @(requires: 'authenticated-user'){
     // ─────────────────────────────────────────────
 
     entity RFQEvents      as projection on BidEqualization.RFQEvent;
+    
+
+
 
     entity RFQItems       as projection on BidEqualization.RFQItem;
 
