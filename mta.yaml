@@ -27,8 +27,9 @@ modules:
     requires:
       - name: bid-equalization-auth
       - name: bid-equalization-db
-      - name: bid-equalization-destination
-      - name: bid-equalization-connectivity
+      - name: qaforum-db        
+      - name: bid-equalization-destination      
+      - name: bid-equalization-connectivity      
 
   - name: bid-equalization-db-deployer
     type: hdb
@@ -37,6 +38,13 @@ modules:
       buildpack: nodejs_buildpack
     requires:
       - name: bid-equalization-db
+        properties:
+          TARGET_CONTAINER: ~{hdi-container-name}
+      - name: qaforum-db
+        group: SERVICE_REPLACEMENTS
+        properties:
+          key: qaforum-db-key
+          service: ~{the-service-name}
 
   - name: bid-equalization-destinations
     type: com.sap.application.content
@@ -50,7 +58,7 @@ modules:
           service-key:
             name: bid-equalization-html5-repo-host-key
       - name: srv-api
-      - name: bid-equalization-destination
+      - name: bid-equalization-destination      
         parameters:
           content-target: true
     build-parameters:
@@ -134,6 +142,16 @@ resources:
     parameters:
       service: hana
       service-plan: hdi-shared
+    properties:
+      hdi-container-name: ${service-name}
+
+  - name: qaforum-db
+    type: org.cloudfoundry.existing-service
+    parameters:
+      service-name: qaforum-db
+    properties:
+      the-service-name: ${service-name}
+
   - name: bid-equalization-destination
     type: org.cloudfoundry.managed-service
     parameters:

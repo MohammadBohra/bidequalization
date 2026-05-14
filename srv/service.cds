@@ -15,14 +15,14 @@ service BidEqualizationService @(requires: 'authenticated-user'){
     // Entity Projections
     // ─────────────────────────────────────────────
 
-    entity RFQEvents      as projection on BidEqualization.RFQEvent;
+    entity Events      as projection on BidEqualization.Events;
     
 
 
 
     entity RFQItems       as projection on BidEqualization.RFQItem;
 
-    entity Suppliers      as projection on BidEqualization.Supplier;
+    entity EventSuppliers      as projection on BidEqualization.EventSuppliers;
 
     entity SupplierBids   as projection on BidEqualization.SupplierBid;
 
@@ -113,35 +113,35 @@ service BidEqualizationService @(requires: 'authenticated-user'){
 // Annotations for Fiori Elements
 // ─────────────────────────────────────────────
 
-annotate BidEqualizationService.RFQEvents with @(UI: {
+annotate BidEqualizationService.Events with @(UI: {
     HeaderInfo         : {
         TypeName      : 'RFQ Event',
         TypeNamePlural: 'RFQ Events',
-        Title         : {Value: eventName},
-        Description   : {Value: eventID}
+        Title         : {Value: EventId},
+        Description   : {Value: EventDescription}
     },
     LineItem           : [
         {
-            Value: eventID,
+            Value: EventId,
             Label: 'RFQ ID'
         },
+        // {
+        //     Value: eventName,
+        //     Label: 'RFQ Name'
+        // },
         {
-            Value: eventName,
-            Label: 'RFQ Name'
-        },
-        {
-            Value: description,
+            Value: EventDescription,
             Label: 'Description'
         },
         {
-            Value: status,
+            Value: EventStatus,
             Label: 'Status'
         }
     ],
     SelectionFields    : [
-        eventID,
-        eventName,
-        status
+        EventId,
+        EventDescription,
+        EventStatus
     ],
     Facets             : [
         {
@@ -156,10 +156,10 @@ annotate BidEqualizationService.RFQEvents with @(UI: {
         }
     ],
     FieldGroup #General: {Data: [
-        {Value: eventID},
-        {Value: eventName},
-        {Value: description},
-        {Value: status}
+        {Value: EventId},
+        {Value: EventDescription},
+        // {Value: description},
+        {Value: EventStatus}
     ]}
 });
 

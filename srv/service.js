@@ -12,6 +12,7 @@
  */
 
 const cds = require("@sap/cds");
+const { SELECT } = cds.ql
 
 module.exports = class BidEqualizationService extends cds.ApplicationService {
   async init() {
@@ -28,7 +29,7 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
     // ================= FETCH MATCHING FORMULA =================
     const formula = await SELECT.one.from("BidEqualization.BidFormula")
       .where({
-        isActive: true,
+        // isActive: true,
         leftBenchmarkBidType: data.leftBenchmarkBidType,
         leftDevelopmentType: data.leftDevelopmentType,
         leftDeliveryMode: data.leftDeliveryMode,
@@ -64,80 +65,437 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
 });
 
 
-this.on('READ', 'RFQEvents', async (req) => {
+this.on('READ', 'EventSuppliers', async (req) => {
 
-  const events = await forum.run(req.query);
-  if (!req.query.SELECT?.expand) return events;
+  const db = await cds.connect.to('db')
 
-  const tx = cds.tx(req);
-  const items = await tx.run(SELECT.from('RFQItem'));
+  let sql = `
+    SELECT DISTINCT
+      "EVENTID"                AS "EventId",
+      "ANID"                   AS "ANID",
+      "SUPPLIERCONTACTEMAIL"   AS "SupplierContactEmail",
+      "SUPPLIERCONTACTNAME"    AS "SupplierContactName",
+      "SMVENDORID"             AS "SmVendorID"
+    FROM "C062E46443274A56ACAF1F2501BF9F72"."EVENTSUPPLIERS_REMOTE"
+  `
 
-  return events.map(e => ({
-    ...e,
-    items: items.filter(i =>
-      i.rfq_eventID === e.EventId &&
-      i.rfq_sourcingProject === e.SourcingProject
+  const values = []
+
+  // =====================================
+  // OBJECT PAGE / SINGLE RECORD
+  // =====================================
+  if (req.params?.length) {
+
+    const keys = req.params[0]
+
+    sql += `
+      WHERE
+        "EVENTID" = ?
+        AND "ANID" = ?
+        AND "SUPPLIERCONTACTEMAIL" = ?
+    `
+
+    values.push(
+      keys.EventId,
+      keys.ANID,
+      keys.SupplierContactEmail
     )
-  }));
+
+    const result = await db.run(sql, values)
+
+    return result[0]
+  }
+
+  // =====================================
+  // HANDLE $filter
+  // =====================================
+  const where = req.query?.SELECT?.where
+
+  if (where) {
+
+    const eventIdFilterIndex = where.findIndex(
+      x => x.ref && x.ref[0] === 'EventId'
+    )
+
+    if (eventIdFilterIndex >= 0) {
+
+      const eventId =
+        where[eventIdFilterIndex + 2]?.val
+
+      sql += ` WHERE "EVENTID" = ? `
+
+      values.push(eventId)
+    }
+  }
+
+  return await db.run(sql, values)
+
+})
+
+// this.on('READ', 'Events', async (req) => {
+
+//   const db = await cds.connect.to('db')
+
+//   let sql = `
+//     SELECT
+//       "EVENTID"            AS "EventId",
+//       "EVENTDESCRIPTION"   AS "EventDescription",
+//       "EVENTSTARTDATE"     AS "EventStartDate",
+//       "EVENTENDDATE"       AS "EventEndDate",
+//       "EVENTSTATUS"        AS "EventStatus",
+//       "SOURCINGPROJECT"    AS "SourcingProject",
+//       "FORUMID"            AS "ForumId",
+//       "FORUMSTATUS"        AS "ForumStatus"
+//     FROM "C062E46443274A56ACAF1F2501BF9F72"."EVENTS_REMOTE"
+//   `
+
+//   const values = []
+
+//   // Handle key navigation/object page
+//   if (req.params?.length) {
+
+//     const keys = req.params[0]
+
+//     sql += `
+//       WHERE
+//         "EVENTID" = ?
+//         AND "SOURCINGPROJECT" = ?
+//     `
+
+//     values.push(
+//       keys.EventId,
+//       keys.SourcingProject
+//     )
+
+//     const result = await db.run(sql, values)
+
+//     return result[0]
+//   }
+
+//   // Handle $filter
+//   const where = req.query?.SELECT?.where
+
+//   if (where) {
+
+//     const eventIdFilterIndex = where.findIndex(
+//       x => x.ref && x.ref[0] === 'EventId'
+//     )
+
+//     if (eventIdFilterIndex >= 0) {
+
+//       const eventId =
+//         where[eventIdFilterIndex + 2]?.val
+
+//       sql += ` WHERE "EVENTID" = ? `
+
+//       values.push(eventId)
+//     }
+//   }
+
+//   const result = await db.run(sql, values)
+
+//   return result
+// })
+
+this.on('READ', 'RFQItems', async (req) => {
+
+  const tx = cds.tx(req)
+
+  // SINGLE RECORD READ
+  if (req.data.itemNo) {
+
+    return await tx.run(
+      SELECT.one
+        .from('BidEqualization.RFQItem')
+        .where({ itemNo: req.data.itemNo })
+    )
+  }
+
+  // NAVIGATION READ
+  const parent = req.params?.[0]
+
+  const where = {}
+
+  if (parent?.EventId) {
+    where.rfq_EventId = parent.EventId
+  }
+
+  // if (parent?.SourcingProject) {
+  //   where.rfq_SourcingProject = parent.SourcingProject
+  // }
+
+  return await tx.run(
+    SELECT.from('BidEqualization.RFQItem')
+      .where(where)
+  )
+
+})
+
+this.on('READ', 'Events', async (req) => {
+
+  const db = await cds.connect.to('db');
+  const userId = req.user.id;
+
+  // =====================================================
+  // OBJECT PAGE
+  // =====================================================
+  if (req.params?.length) {
+
+    const keys = req.params[0];
+
+    const result = await db.run(`
+      SELECT
+        E."EVENTID"            AS "EventId",
+        E."EVENTDESCRIPTION"   AS "EventDescription",
+        E."EVENTSTARTDATE"     AS "EventStartDate",
+        E."EVENTENDDATE"       AS "EventEndDate",
+        E."EVENTSTATUS"        AS "EventStatus",
+        E."SOURCINGPROJECT"    AS "SourcingProject",
+        E."FORUMID"            AS "ForumId",
+        E."FORUMSTATUS"        AS "ForumStatus"
+      FROM "C062E46443274A56ACAF1F2501BF9F72"."EVENTS_REMOTE" E
+      INNER JOIN "C062E46443274A56ACAF1F2501BF9F72"."EVENTTEAMMEMBERS_REMOTE" TM
+        ON E."EVENTID" = TM."EVENTID"
+      WHERE E."EVENTID" = ?
+        AND LOWER(TM."USERUNIQUENAME") = LOWER(?)
+    `, [keys.EventId, userId]);
+
+    return result[0];
+  }
+
+  // =====================================================
+  // LIST REPORT
+  // =====================================================
+
+  let sql = `
+    SELECT DISTINCT
+      E."EVENTID"            AS "EventId",
+      E."EVENTDESCRIPTION"   AS "EventDescription",
+      E."EVENTSTARTDATE"     AS "EventStartDate",
+      E."EVENTENDDATE"       AS "EventEndDate",
+      E."EVENTSTATUS"        AS "EventStatus",
+      E."SOURCINGPROJECT"    AS "SourcingProject",
+      E."FORUMID"            AS "ForumId",
+      E."FORUMSTATUS"        AS "ForumStatus"
+    FROM "C062E46443274A56ACAF1F2501BF9F72"."EVENTS_REMOTE" E
+    INNER JOIN "C062E46443274A56ACAF1F2501BF9F72"."EVENTTEAMMEMBERS_REMOTE" TM
+      ON E."EVENTID" = TM."EVENTID"
+    WHERE LOWER(TM."USERUNIQUENAME") = LOWER(?)
+  `;
+
+  const params = [userId];
+
+  // =====================================================
+  // FIORI FILTER SUPPORT
+  // =====================================================
+
+  const where = req.query.SELECT?.where;
+
+  if (where) {
+
+    const whereStr = JSON.stringify(where);
+
+    // EventId filter
+    const eventIdMatch = whereStr.match(/EventId.*?val":"([^"]+)"/);
+
+    if (eventIdMatch) {
+      sql += ` AND E."EVENTID" = ?`;
+      params.push(eventIdMatch[1]);
+    }
+
+    // EventStatus filter
+    const statusMatch = whereStr.match(/EventStatus.*?val":"([^"]+)"/);
+
+    if (statusMatch) {
+      sql += ` AND E."EVENTSTATUS" = ?`;
+      params.push(statusMatch[1]);
+    }
+  }
+
+  // =====================================================
+  // SORTING SUPPORT
+  // =====================================================
+
+  const orderBy = req.query.SELECT?.orderBy;
+
+  if (orderBy?.length) {
+
+    const sort = orderBy[0];
+
+    const fieldMap = {
+      EventId: 'E."EVENTID"',
+      EventDescription: 'E."EVENTDESCRIPTION"',
+      EventStartDate: 'E."EVENTSTARTDATE"',
+      EventEndDate: 'E."EVENTENDDATE"',
+      EventStatus: 'E."EVENTSTATUS"'
+    };
+
+    const field = fieldMap[sort.ref?.[0]];
+
+    if (field) {
+      sql += ` ORDER BY ${field} ${sort.sort === 'desc' ? 'DESC' : 'ASC'}`;
+    }
+  }
+
+  return await db.run(sql, params);
+
 });
 
-    this.on("calculateComparison1", async (req) => {
-      const { rfqItemID, supplierLeft, supplierRight } = req.data;
-      const db = cds.db;
 
-      // 1. Fetch the active formula
-      const formula = await db.run(
-        SELECT.one.from("BidEqualization.BidFormula").where({ isActive: true }),
-      );
-      if (!formula) {
-        return req.error(
-          404,
-          "No active formula found. Please activate a BidFormula record.",
-        );
-      }
+// this.on('READ', 'Events', async (req) => {
 
-      // 2. Fetch the bid for Left supplier
-      const bidLeft = await db.run(
-        SELECT.one
-          .from("BidEqualization.SupplierBid")
-          .where({ rfqItem_ID: rfqItemID, supplier_ID: supplierLeft }),
-      );
-      if (!bidLeft) {
-        return req.error(
-          404,
-          `No bid found for left supplier ${supplierLeft} on item ${rfqItemID}`,
-        );
-      }
+//   const db = await cds.connect.to('db')
 
-      // 3. Fetch the bid for Right supplier
-      const bidRight = await db.run(
-        SELECT.one
-          .from("BidEqualization.SupplierBid")
-          .where({ rfqItem_ID: rfqItemID, supplier_ID: supplierRight }),
-      );
-      if (!bidRight) {
-        return req.error(
-          404,
-          `No bid found for right supplier ${supplierRight} on item ${rfqItemID}`,
-        );
-      }
+//   // Logged in user
+//   const userId = req.user.id
 
-      // 4. Evaluate formula dynamically for each bid
-      const equalizedLeft = _evaluateFormula(formula.expression, bidLeft);
-      const equalizedRight = _evaluateFormula(formula.expression, bidRight);
+//   let sql = `
+//     SELECT DISTINCT
+//       E."EVENTID"            AS "EventId",
+//       E."EVENTDESCRIPTION"   AS "EventDescription",
+//       E."EVENTSTARTDATE"     AS "EventStartDate",
+//       E."EVENTENDDATE"       AS "EventEndDate",
+//       E."EVENTSTATUS"        AS "EventStatus",
+//       E."SOURCINGPROJECT"    AS "SourcingProject",
+//       E."FORUMID"            AS "ForumId",
+//       E."FORUMSTATUS"        AS "ForumStatus"
+//     FROM "C062E46443274A56ACAF1F2501BF9F72"."EVENTS_REMOTE" E
+//     INNER JOIN "C062E46443274A56ACAF1F2501BF9F72"."EVENTTEAMMEMBERS_REMOTE" TM
+//       ON E."EVENTID" = TM."EVENTID"
+//     WHERE LOWER(TM."USERUNIQUENAME") = LOWER(?) `
 
-      // 5. Determine winner (lower equalized bid wins)
-      const winner =
-        equalizedLeft <= equalizedRight ? supplierLeft : supplierRight;
+//   const values = [userId]
+// console.log(userId);
+//   // =========================================
+//   // OBJECT PAGE READ
+//   // =========================================
+//   if (req.params?.length) {
 
-      return {
-        equalizedLeft,
-        equalizedRight,
-        winner,
-        formulaName: formula.name,
-        formulaExpr: formula.expression,
-      };
-    });
+//     const keys = req.params[0]
+
+//     sql += `
+//       AND E."EVENTID" = ?     
+//     `
+
+//     values.push(
+//       keys.EventId
+//       //keys.SourcingProject
+//     )
+
+//     const result = await db.run(sql, values)
+
+//     return result[0]
+//   }
+
+//   // =========================================
+//   // HANDLE $filter
+//   // =========================================
+//   const where = req.query?.SELECT?.where
+
+//   if (where) {
+
+//     const eventIdFilterIndex = where.findIndex(
+//       x => x.ref && x.ref[0] === 'EventId'
+//     )
+
+//     if (eventIdFilterIndex >= 0) {
+
+//       const eventId =
+//         where[eventIdFilterIndex + 2]?.val
+
+//       sql += ` AND E."EVENTID" = ? `
+
+//       values.push(eventId)
+//     }
+//   }
+
+//   const result = await db.run(sql, values)
+
+//   return result
+// })
+
+// this.on('READ', 'RFQItems', async (req) => {
+
+//   const parent = req.params?.[0]
+
+//   const where = {}
+
+//   if (parent?.EventId) {
+//     where.rfq_EventId = parent.EventId
+//   }
+
+//   if (parent?.SourcingProject) {
+//     where.rfq_SourcingProject = parent.SourcingProject
+//   }
+
+//   const tx = cds.tx(req)
+
+//   return await tx.run(
+//     SELECT.from('BidEqualization.RFQItem')
+//       .where(where)
+//   )
+
+// });
+
+
+
+// this.on("calculateComparison1", async (req) => {
+//       const { rfqItemID, supplierLeft, supplierRight } = req.data;
+//       const db = cds.db;
+
+//       // 1. Fetch the active formula
+//       const formula = await db.run(
+//         SELECT.one.from("BidEqualization.BidFormula").where({ isActive: true }),
+//       );
+//       if (!formula) {
+//         return req.error(
+//           404,
+//           "No active formula found. Please activate a BidFormula record.",
+//         );
+//       }
+
+//       // 2. Fetch the bid for Left supplier
+//       const bidLeft = await db.run(
+//         SELECT.one
+//           .from("BidEqualization.SupplierBid")
+//           .where({ rfqItem_itemNo: rfqItemID, supplier_ID: supplierLeft }),
+//       );
+//       if (!bidLeft) {
+//         return req.error(
+//           404,
+//           `No bid found for left supplier ${supplierLeft} on item ${rfqItemID}`,
+//         );
+//       }
+
+//       // 3. Fetch the bid for Right supplier
+//       const bidRight = await db.run(
+//         SELECT.one
+//           .from("BidEqualization.SupplierBid")
+//           .where({ rfqItem_itemNo: rfqItemID, supplier_ID: supplierRight }),
+//       );
+//       if (!bidRight) {
+//         return req.error(
+//           404,
+//           `No bid found for right supplier ${supplierRight} on item ${rfqItemID}`,
+//         );
+//       }
+
+//       // 4. Evaluate formula dynamically for each bid
+//       const equalizedLeft = _evaluateFormula(formula.expression, bidLeft);
+//       const equalizedRight = _evaluateFormula(formula.expression, bidRight);
+
+//       // 5. Determine winner (lower equalized bid wins)
+//       const winner =
+//         equalizedLeft <= equalizedRight ? supplierLeft : supplierRight;
+
+//       return {
+//         equalizedLeft,
+//         equalizedRight,
+//         winner,
+//         formulaName: formula.name,
+//         formulaExpr: formula.expression,
+//       };
+//     });
 
     // ─────────────────────────────────────────────────────────────
     // ACTION: saveComparison
@@ -159,12 +517,12 @@ this.on('READ', 'RFQEvents', async (req) => {
       await db.run(
         INSERT.into("BidEqualization.BidComparison").entries({
           ID: id,
-          rfqItem_ID: rfqItemID,
-          supplierLeft_ID: supplierLeftID,
-          supplierRight_ID: supplierRightID,
+          rfqItem_itemNo: rfqItemID,
+          supplierLeft_SupplierContactEmail: supplierLeftID,
+          supplierRight_SupplierContactEmail: supplierRightID,
           equalizedBidLeft: equalizedLeft,
           equalizedBidRight: equalizedRight,
-          winnerSupplier_ID: winnerID,
+          winnerSupplier_SupplierContactEmail: winnerID,
           notes: notes || "",
           createdAt: new Date().toISOString(),
           modifiedAt: new Date().toISOString(),
@@ -191,14 +549,14 @@ this.on('READ', 'RFQEvents', async (req) => {
       await db.run(
         UPDATE("BidEqualization.SupplierBid")
           .set({ isBenchmark: false })
-          .where({ rfqItem_ID: rfqItemID }),
+          .where({ rfqItem_itemNo: rfqItemID }),
       );
 
       // Set new benchmark
       await db.run(
         UPDATE("BidEqualization.SupplierBid")
           .set({ isBenchmark: true })
-          .where({ rfqItem_ID: rfqItemID, supplier_ID: supplierID }),
+          .where({ rfqItem_itemNo: rfqItemID, supplier_ID: supplierID }),
       );
 
       return true;
@@ -231,18 +589,19 @@ this.on('READ', 'RFQEvents', async (req) => {
         db.run(
           SELECT.one
             .from("BidEqualization.RFQItem")
-            .where({ ID: comparison.rfqItem_ID }),
+            .where({ itemNo: comparison.rfqItem_itemNo }),
         ),
       ]);
 
       // Fetch RFQ event
       const rfqEvent = rfqItem
-        ? await db.run(
-            SELECT.one
-              .from("BidEqualization.RFQEvent")
-              .where({ eventID: rfqItem.rfq_eventID }),
-          )
-        : null;
+  ? await db.run(`
+      SELECT TOP 1 *
+      FROM "C062E46443274A56ACAF1F2501BF9F72"."EVENTS_REMOTE"
+      WHERE "EVENTID" = ?
+    `, [rfqItem.rfq_EventId])
+  : null;
+  
        const pdfBuffer = await _generatePDFBuffer({
         comparison,
         rfqEvent,
@@ -432,9 +791,9 @@ function _generatePDFBuffer({
     doc.moveDown(0.3);
     doc.fontSize(10).font("Helvetica");
 
-    const rfqRows = [
-      ["RFQ ID", rfqEvent?.eventID || "-"],
-      ["RFQ Name", rfqEvent?.eventName || "-"],
+    const rfqRows = [      
+      ["RFQ ID", rfqEvent[0].EVENTID || "-"],
+      ["RFQ Name", rfqEvent[0].EVENTDESCRIPTION || "-"],
       ["Item No", rfqItem?.itemNo || "-"],
       ["Commodity", rfqItem?.commodity || "-"],
       ["Quantity", `${rfqItem?.quantity || "-"} ${rfqItem?.unit || ""}`],

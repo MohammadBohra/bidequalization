@@ -10,6 +10,8 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
      *   aSelectedContexts – array of selected table row contexts (RFQItems)
      */
     onInit: function () {
+       // Call the user API provided by the approuter
+    
   const oRouter = this.base.getExtensionAPI().getRouter();
   oRouter.getRoute("RFQEventsObjectPage").attachPatternMatched(
     this._onRouteMatched,
@@ -17,13 +19,24 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
   );
 },
     openEqualization: function (oBindingContext, aSelectedContexts) {
+
+
+      var sUrl = "/user-api/currentUser";
+    var oUserModel1 = new sap.ui.model.json.JSONModel(sUrl);
+    
+    oUserModel1.attachRequestCompleted(function() {
+        if (oUserModel1.getData().email) {
+            console.log("Logged in user: " + oUserModel1.getData().email);
+        }
+    });
+    
       if (!aSelectedContexts || aSelectedContexts.length === 0) {
         MessageToast.show("Please select an RFQ Item first.");
         return;
       }
 
       var oCtx = aSelectedContexts[0];
-      var sItemId = oCtx.getProperty("ID");
+      var sItemId = oCtx.getProperty("itemNo");
       var sCommodity = oCtx.getProperty("commodity") || sItemId;
 
       if (!sItemId) {

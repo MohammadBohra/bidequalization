@@ -32,23 +32,63 @@ using { ForumService as external } from '../srv/external/ForumService';
 //     items       : Composition of many RFQItem
 //                       on items.rfq = $self;
 // }
-entity RFQEvent as projection on external.Events {
-    key EventId           as eventID,
-    key SourcingProject as sourcingProject,
-    EventDescription      as eventName,
-    EventDescription      as description,
-    EventStatus           as status
-    // items       : Composition of many RFQItem
-    //                   on items.rfq = $self
-};
+// entity RFQEvent as projection on external.Events {
+//     key EventId           as eventID,
+//     key SourcingProject as sourcingProject,
+//     EventDescription      as eventName,
+//     EventDescription      as description,
+//     EventStatus           as status
+//     // items       : Composition of many RFQItem
+//     //                   on items.rfq = $self
+// };
+// @cds.persistence.skip
+@cds.persistence.exists
+@cds.persistence.name : 'EVENTS_REMOTE'
+entity Events  {  
+  key EventId     : String(20) @title: 'RFQ Event ID';
+  EventDescription     : String(50) @title: 'RFQ Event Name';  
+  EventStartDate   : Timestamp; 
+  EventEndDate     : Timestamp; 
+  EventStatus      : String(50) @title: 'Event Status';
+  SourcingProject : String(20);
+  ForumId     : String(50);
+  ForumStatus      : String(50);
+  items       : Composition of many RFQItem
+                      on items.rfq = $self
+}
+
+
+@cds.persistence.exists
+entity EVENTTEAMMEMBERS_REMOTE {
+
+    key EVENTID         : String(50);
+    key USERUNIQUENAME  : String(255);
+
+    CREATEDAT           : Timestamp;
+    CREATEDBY           : String(255);
+    MODIFIEDAT          : Timestamp;
+    MODIFIEDBY          : String(255);
+    TEAMID              : String(50);
+    NAME                : String(255);
+    EMAILADDRESS        : String(255);
+}
+// @cds.persistence.exists
+@cds.persistence.name : 'EVENTSUPPLIERS_REMOTE'
+entity EventSuppliers {  
+  EventId     : String(20);
+  ANID : String(50);
+  key SupplierContactEmail : String(100);
+  SupplierContactName:String(200);
+  SmVendorID     : String(50);
+}
 
 
 // ─────────────────────────────────────────────
 // RFQ Item (Line Item)
 // ─────────────────────────────────────────────
-entity RFQItem : cuid, managed {
-    rfq         : Association to RFQEvent;
-    itemNo      : String(10)              @title: 'Item No';
+entity RFQItem : managed {
+    rfq         : Association to Events;
+    key itemNo      : String(10)              @title: 'Item No';
     commodity   : String(150)             @title: 'Commodity';
     quantity    : Decimal(10, 2)          @title: 'Quantity';
     unit        : String(10) default 'EA' @title: 'Unit';
@@ -63,19 +103,19 @@ entity RFQItem : cuid, managed {
 // ─────────────────────────────────────────────
 // Supplier (Vendor Master)
 // ─────────────────────────────────────────────
-entity Supplier : cuid, managed {
-    supplierCode : String(20)  @title: 'Supplier Code';
-    supplierName : String(150) @title: 'Supplier Name';
-    country      : String(50)  @title: 'Country';
-    contactEmail : String(100) @title: 'Contact Email';
-}
+// entity Supplier : cuid, managed {
+//     supplierCode : String(20)  @title: 'Supplier Code';
+//     supplierName : String(150) @title: 'Supplier Name';
+//     country      : String(50)  @title: 'Country';
+//     contactEmail : String(100) @title: 'Contact Email';
+// }
 
 // ─────────────────────────────────────────────
 // Supplier Bid (Price components per item)
 // ─────────────────────────────────────────────
 entity SupplierBid : cuid, managed {
     rfqItem       : Association to RFQItem;
-    supplier      : Association to Supplier;
+    //supplier      : Association to Supplier;
 
     // Price components used in equalization formula
     localBidValue : Decimal(15, 2) default 0 @title: 'Local Bid Value';
@@ -95,12 +135,12 @@ entity SupplierBid : cuid, managed {
 
 entity BidComparison : cuid, managed {
     rfqItem           : Association to RFQItem;
-    supplierLeft      : Association to Supplier;
-    supplierRight     : Association to Supplier;
+    supplierLeft      : Association to EventSuppliers;
+    supplierRight     : Association to EventSuppliers;
 
     leftEqualizedBid  : Decimal(15, 2);
     equalizedBidRight : Decimal(15, 2);
-    winnerSupplier    : Association to Supplier;
+    winnerSupplier    : Association to EventSuppliers;
 
     notes             : String(500);
 

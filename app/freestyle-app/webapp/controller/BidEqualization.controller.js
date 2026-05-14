@@ -48,6 +48,18 @@ sap.ui.define(
       // ──────────────────────────────────────────────────────────
 
       onInit: function () {
+
+
+
+        // Call the user API provided by the approuter
+    var sUrl = "/user-api/currentUser";
+    var oUserModel1 = new sap.ui.model.json.JSONModel(sUrl);
+    
+    oUserModel1.attachRequestCompleted(function() {
+        if (oUserModel1.getData().email) {
+            console.log("Logged in user: " + oUserModel1.getData().email);
+        }
+    });
         
         this._handleStartupNavigation();
         const oRouter = this.getOwnerComponent().getRouter();
@@ -110,7 +122,7 @@ window.location.replace(sTargetUrl);
     const oTable = this.byId("comparisonsTable");
     const oBinding = oTable.getBinding("items");
 
-    const oFilter = new Filter("rfqItem_ID", FilterOperator.EQ, sItemID);
+    const oFilter = new Filter("rfqItem_itemNo", FilterOperator.EQ, sItemID);
     oBinding.filter([oFilter]);
   }
 
@@ -165,7 +177,7 @@ window.location.replace(sTargetUrl);
       //   Promise.all([
       //     this._fetchJSON(`${SERVICE_URL}RFQItems('${sItemID}')?$expand=rfq`),
       //     this._fetchJSON(
-      //       `${SERVICE_URL}SupplierBids?$filter=rfqItem_ID eq ${sItemID}&$expand=supplier`,
+      //       `${SERVICE_URL}SupplierBids?$filter=rfqItem_itemNo eq ${sItemID}&$expand=supplier`,
       //     ),
       //     this._fetchJSON(
       //       `${SERVICE_URL}BidFormulas?$filter=isActive eq true&$top=1`,
@@ -237,7 +249,7 @@ window.location.replace(sTargetUrl);
        */
       // _loadComparisons: async function (sItemID) {
       //   const data = await this._fetchJSON(
-      //     `${SERVICE_URL}BidComparisons?$filter=rfqItem_ID eq ${sItemID}` +
+      //     `${SERVICE_URL}BidComparisons?$filter=rfqItem_itemNo eq ${sItemID}` +
       //       `&$expand=supplierLeft,supplierRight,winnerSupplier&$orderby=createdAt desc`,
       //   );
       //   return (data.value || []).map((c) => ({
@@ -245,10 +257,10 @@ window.location.replace(sTargetUrl);
       //     createdAt: c.createdAt ? new Date(c.createdAt).toLocaleString() : "",
       //     supplierLeftName: c.supplierLeft
       //       ? c.supplierLeft.supplierName
-      //       : c.supplierLeft_ID,
+      //       : c.supplierLeft_SupplierContactEmail,
       //     supplierRightName: c.supplierRight
       //       ? c.supplierRight.supplierName
-      //       : c.supplierRight_ID,
+      //       : c.supplierRight_SupplierContactEmail,
       //     equalizedBidLeft: c.equalizedBidLeft,
       //     equalizedBidRight: c.equalizedBidRight,
       //     currency: "USD",
@@ -382,6 +394,7 @@ window.location.replace(sTargetUrl);
     const response = oAction.getBoundContext().getObject();
 
     // Update UI
+    debugger;
     oView.byId("leftEqualizedBid").setValue(response.leftEqualizedBid.result);
     oView.byId("leftFreight").setValue(response.leftEqualizedBid.breakdown.traffic);
 oView.byId("leftDuty").setValue(response.leftEqualizedBid.breakdown.duty);
@@ -405,12 +418,12 @@ sap.m.MessageBox.success(
 
 // Calculate the difference
  
- this.getView().byId("formulaExpr").setText(response.formulaExpr);
+ oView.byId("formulaExpr").setText(response.formulaExpr);
   const rightTotalLocalBid = this._formatDecimal(this.getView().byId("rightTotalLocalBid").getValue()) || 0;
   const difference = response.leftEqualizedBid.result - rightTotalLocalBid;
   const leftequalizedBid = response.leftEqualizedBid.result;
   //Populate difference
-  this.getView().byId("rightCommodityDifference").setValue(difference.toFixed(2));
+  oView.byId("rightCommodityDifference").setValue(difference.toFixed(2));
 
   // Calculate percentage difference
 let differencePercent = 0;
@@ -421,7 +434,7 @@ if (rightTotalLocalBid !== 0) {
 const formattedPercent = `${differencePercent.toFixed(2)} %`;
 
 // Populate percentage
-this.getView().byId("rightDifference").setValue(formattedPercent);
+oView.byId("rightDifference").setValue(formattedPercent);
 
   } catch (err) {
     let errorMsg = "Calculation failed";
@@ -535,10 +548,10 @@ this.getView().byId("rightDifference").setValue(formattedPercent);
       _loadBidDetails: async function (sItemID, sLeftID, sRightID, oModel) {
         const [leftBids, rightBids] = await Promise.all([
           this._fetchJSON(
-            `${SERVICE_URL}SupplierBids?$filter=rfqItem_ID eq ${sItemID} and supplier_ID eq ${sLeftID}`,
+            `${SERVICE_URL}SupplierBids?$filter=rfqItem_itemNo eq ${sItemID} and supplier_ID eq ${sLeftID}`,
           ),
           this._fetchJSON(
-            `${SERVICE_URL}SupplierBids?$filter=rfqItem_ID eq ${sItemID} and supplier_ID eq ${sRightID}`,
+            `${SERVICE_URL}SupplierBids?$filter=rfqItem_itemNo eq ${sItemID} and supplier_ID eq ${sRightID}`,
           ),
         ]);
 
@@ -877,7 +890,7 @@ const aAdditionalPayload = aRightAdditionalFields.map(f => ({
 
   try {
     const oPayload = {
-      rfqItem_ID: oModel.getProperty("/rfqItemID"),
+      rfqItem_itemNo: oModel.getProperty("/rfqItemID"),
       notes: oNotesInput.getValue() || "",
 
       // LEFT
@@ -1010,15 +1023,15 @@ onSaveComparison1: function () {
 
                     // 🔥 Deep insert payload
                     const payload = {
-                        rfqItem_ID: oData.rfqItem_ID,
+                        rfqItem_itemNo: oData.rfqItem_itemNo,
 
-                        supplierLeft_ID: oData.supplierLeft_ID,
-                        supplierRight_ID: oData.supplierRight_ID,
+                        supplierLeft_SupplierContactEmail: oData.supplierLeft_SupplierContactEmail,
+                        supplierRight_SupplierContactEmail: oData.supplierRight_SupplierContactEmail,
 
                         equalizedBidLeft: oData.equalizedBidLeft,
                         equalizedBidRight: oData.equalizedBidRight,
 
-                        winnerSupplier_ID: oData.winnerSupplier_ID,
+                        winnerSupplier_SupplierContactEmail: oData.winnerSupplier_SupplierContactEmail,
 
                         notes: oNotesInput.getValue(),
 
@@ -1403,6 +1416,7 @@ onSaveComparison1: function () {
        */
 
       onVendorHelp: function (oEvent) {
+
   const oSource = oEvent.getSource();
   const sSide = oSource.data("side") || "left";
 
@@ -1412,47 +1426,109 @@ onSaveComparison1: function () {
 
       const oDialog = new SelectDialog({
         title: "Select Supplier",
-        noDataText: "No suppliers found",
-
-        items: {
-          path: "/Suppliers", // OData entity
-          template: new StandardListItem({
-            title: "{supplierName}",
-            description: "{supplierCode}"
-          })
-        },
-
-        confirm: (oEvt) => {
-          const oItem = oEvt.getParameter("selectedItem");
-          if (!oItem) return;
-
-          const oCtx = oItem.getBindingContext();
-          const sName = oCtx.getProperty("supplierName");
-          const sCode = oCtx.getProperty("supplierCode");
-
-          // Set value back to input
-          oSource.setValue(sName);
-
-          // OPTIONAL: store in your binding context instead of JSON
-          const oInputCtx = oSource.getBindingContext();
-          if (oInputCtx) {
-            oInputCtx.setProperty(`${sSide}SupplierName`, sName);
-            oInputCtx.setProperty(`${sSide}SupplierCode`, sCode);
-          }
-
-          oDialog.destroy();
-        },
-
-        cancel: () => oDialog.destroy()
+        noDataText: "No suppliers found"
       });
 
-      // 🔥 IMPORTANT: use OData model (default model)
-      oDialog.setModel(this.getView().getModel());
+      const oModel = this.getView().getModel();
+      oDialog.setModel(oModel);
+      const sEventId = this.getView().byId("eventId").getText();
+
+oDialog.bindAggregation("items", {
+  path: "/EventSuppliers",
+  parameters: {
+    $filter: `EventId eq '${sEventId}'`
+  },
+  template: new StandardListItem({
+    title: "{SupplierContactName}",
+    description: "{SupplierContactEmail}"
+  })
+});
+
+      // Confirm handler
+      oDialog.attachConfirm((oEvt) => {
+
+        const oItem = oEvt.getParameter("selectedItem");
+        if (!oItem) return;
+
+        const oCtx = oItem.getBindingContext();
+
+        const sName = oCtx.getProperty("SupplierContactName");
+        const sEmail = oCtx.getProperty("SupplierContactEmail");
+        const sVendor = oCtx.getProperty("SmVendorID");
+
+        // Set value in input
+        oSource.setValue(sName);
+
+        // Store in binding context
+        const oInputCtx = oSource.getBindingContext();
+        if (oInputCtx) {
+          oInputCtx.setProperty(`${sSide}VendorName`, sName);
+          // oInputCtx.setProperty(`${sSide}SupplierEmail`, sEmail);
+          // oInputCtx.setProperty(`${sSide}SupplierCode`, sVendor);
+        }
+
+        oDialog.destroy();
+      });
+
+      // Cancel cleanup
+      oDialog.attachCancel(() => oDialog.destroy());
 
       oDialog.open();
     }
   );
 },
+
+//       onVendorHelp: function (oEvent) {
+//   const oSource = oEvent.getSource();
+//   const sSide = oSource.data("side") || "left";
+
+//   sap.ui.require(
+//     ["sap/m/SelectDialog", "sap/m/StandardListItem"],
+//     (SelectDialog, StandardListItem) => {
+
+//       const oDialog = new SelectDialog({
+//         title: "Select Supplier",
+//         noDataText: "No suppliers found",
+
+//         items: {
+//           path: "/Suppliers", // OData entity
+//           template: new StandardListItem({
+//             title: "{SupplierContactName}",
+//             description: "{SupplierContactEmail}"
+//           })
+//         },
+
+//         confirm: (oEvt) => {
+//           const oItem = oEvt.getParameter("selectedItem");
+//           if (!oItem) return;
+
+//           const oCtx = oItem.getBindingContext();
+//           const sName = oCtx.getProperty("SupplierContactName");
+//           const sCode = oCtx.getProperty("SupplierContactEmail");
+
+//           // Set value back to input
+//           oSource.setValue(sName);
+
+//           // OPTIONAL: store in your binding context instead of JSON
+//           const oInputCtx = oSource.getBindingContext();
+//           if (oInputCtx) {
+//             oInputCtx.setProperty(`${sSide}SupplierName`, sName);
+//             oInputCtx.setProperty(`${sSide}SupplierCode`, sCode);
+//           }
+
+//           oDialog.destroy();
+//         },
+
+//         cancel: () => oDialog.destroy()
+//       });
+
+//       // 🔥 IMPORTANT: use OData model (default model)
+//       oDialog.setModel(this.getView().getModel());
+
+//       oDialog.open();
+//     }
+//   );
+// },
 
       onVendorHelpOld: function (oEvent) {
         const oSource = oEvent.getSource();

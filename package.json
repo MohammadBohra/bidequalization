@@ -45,9 +45,24 @@
           "destination": "Aramco-e-Marketplace"
         }
       },
+       "BidEqualization": {
+        "kind": "rest",
+        "credentials": {
+          "url": "https://your-bid-equalization-api",
+          "authentication": "OAuth2ClientCredentials",
+          "clientid": "sb-bid-equalization-development-development!t1157",
+          "clientsecret": "34109dfb-698b-4b43-8437-834a679a3ad4$FbHmGW0GhViPXdZ8bNzVD8ThZIu7xASmQCZpXzBGbFk=",
+          "tokenurl": "https://oauth.url/oauth/token"
+        }
+      },
+      "DMS": {
+        "kind": "rest",
+        "credentials": {
+          "destination": "DMS_DESTINATION"
+        }
+      },
       "ForumService": {
-      "kind": "odata",
-      "model": "srv/external",
+      "kind": "rest",      
       "credentials": {
         "destination": "FORUMAPI"
       }
@@ -59,7 +74,7 @@
         "[development]": {
           "kind": "mocked",
           "users": {
-            "mbohra-v@ejada.com": {}
+            "Mbohra-v@Ejada.com": {}
           }
         },
         "[production]": {

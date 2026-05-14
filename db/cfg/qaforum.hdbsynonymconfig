@@ -1,0 +1,21 @@
+{
+  "EVENTS_REMOTE": {
+    "target": {
+      "object": "ARIBA_FORUM_DB_EVENTS",
+      "schema.configure": "qaforum-db-key/schema"
+    }
+  },
+   "EVENTTEAMMEMBERS_REMOTE": {
+    "target": {
+      "object": "ARIBA_FORUM_DB_EVENTTEAMMEMBERS",
+      "schema.configure": "qaforum-db-key/schema"
+    }
+  },
+  "EVENTSUPPLIERS_REMOTE": {
+    "target": {
+      "object": "ARIBA_FORUM_DB_EVENTSUPPLIERS",
+      "schema.configure": "qaforum-db-key/schema"
+    }
+  }
+
+}

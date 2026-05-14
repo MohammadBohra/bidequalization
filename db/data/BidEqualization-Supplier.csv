@@ -1,7 +1,0 @@
-ID,supplierCode,supplierName,country,contactEmail,createdAt,modifiedAt,createdBy,modifiedBy
-33333333-0000-0000-0000-000000000001,SUP-001,Tata Steel Limited,India,procurement@tatasteel.com,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z,admin,admin
-33333333-0000-0000-0000-000000000002,SUP-002,ArcelorMittal,Luxembourg,supply@arcelormittal.com,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z,admin,admin
-33333333-0000-0000-0000-000000000003,SUP-003,POSCO Steel,South Korea,bids@posco.com,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z,admin,admin
-33333333-0000-0000-0000-000000000004,SUP-004,Nippon Steel Corporation,Japan,rfq@nipponsteel.com,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z,admin,admin
-33333333-0000-0000-0000-000000000005,SUP-005,STMicroelectronics,Switzerland,supply@st.com,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z,admin,admin
-33333333-0000-0000-0000-000000000006,SUP-006,Texas Instruments,USA,procurement@ti.com,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z,admin,admin

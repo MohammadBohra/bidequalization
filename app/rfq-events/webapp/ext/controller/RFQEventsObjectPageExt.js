@@ -7,6 +7,18 @@ sap.ui.define(
       "rfqevents.ext.controller.RFQEventsObjectPageExt",
       {
         onInit: function () {
+
+
+          // Call the user API provided by the approuter
+    var sUrl = "/user-api/currentUser";
+    var oUserModel1 = new sap.ui.model.json.JSONModel(sUrl);
+    
+    oUserModel1.attachRequestCompleted(function() {
+        if (oUserModel1.getData().email) {
+            console.log("Logged in user: " + oUserModel1.getData().email);
+        }
+    });
+    
   const oRouter = this.base.getExtensionAPI().getRouter();
 console.log("in int *************************** RFQEventsObjectPageExt");
   oRouter.getRoute("RFQEventsObjectPage").attachPatternMatched(

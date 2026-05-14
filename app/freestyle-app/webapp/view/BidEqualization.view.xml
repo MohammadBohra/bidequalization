@@ -33,7 +33,7 @@
                 </uxap:snappedHeading>
                 <uxap:expandedContent>
                     <FlexBox direction="Row" wrap="Wrap" alignItems="Center" id="headerData">
-                        <ObjectAttribute title="RFQ"       text="{rfq/eventName}" class="sapUiSmallMarginEnd" />
+                        <ObjectAttribute id= "eventId" title="RFQ"       text="{rfq_EventId}" class="sapUiSmallMarginEnd" />
                         <ObjectAttribute title="Item"      text="{itemNo}"  class="sapUiSmallMarginEnd" />
                         <ObjectAttribute title="Commodity" text="{commodity}"     class="sapUiSmallMarginEnd" />
                         <ObjectAttribute title="Quantity"  text="{quantity}" />
@@ -46,7 +46,14 @@
         </uxap:headerTitle>
         <uxap:headerContent>
             <FlexBox direction="Column">
-                <ObjectAttribute title="Formula" class="sapUiSmallMarginBottom" id="formulaExpr" text="{formulaExpr}"/>
+                <ObjectAttribute
+    title="Formula"
+    class="sapUiSmallMarginBottom"
+    id="formulaExpr"
+    text="{
+        path: 'formulaExpr',
+        mode: 'sap.ui.model.BindingMode.OneWay'
+    }"/>
                 
             </FlexBox>
         </uxap:headerContent>
@@ -154,8 +161,9 @@
                                             <!-- Vendor Name -->
                                             <Label text="Vendor Name" required="true" />
                                             <Input
-                                                id="leftVendorInput"
-                                                value="{leftVendorName}"
+                                                id="leftVendorInput"                                                
+                                                value="{path: 'leftVendorName',
+                                                mode:'sap.ui.model.BindingMode.OneWay'}"                                                
                                                 placeholder="Search vendor..."
                                                 showValueHelp="true"
                                                 valueHelpRequest=".onVendorHelp"

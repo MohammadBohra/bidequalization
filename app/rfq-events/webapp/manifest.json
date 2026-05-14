@@ -101,12 +101,12 @@
           "target": "RFQEventsList"
         },
         {
-          "pattern": "RFQEvents({key}):?query:",
+          "pattern": "Events({EventId}):?query:",
           "name": "RFQEventsObjectPage",
           "target": "RFQEventsObjectPage"
         },
         {
-          "pattern": "RFQEvents({key})/items({key2}):?query:",
+          "pattern": "Events({EventId})/items({key2}):?query:",
           "name": "RFQItemsObjectPage",
           "target": "RFQItemsObjectPage"
         }
@@ -118,11 +118,11 @@
           "name": "sap.fe.templates.ListReport",
           "options": {
             "settings": {
-              "contextPath": "/RFQEvents",
+              "contextPath": "/Events",
               "initialLoad": "Enabled",
               "variantManagement": "Page",
               "navigation": {
-                "RFQEvents": {
+                "Events": {
                   "detail": {
                     "route": "RFQEventsObjectPage"
                   }
@@ -145,7 +145,7 @@
           "options": {
             "settings": {
               "editableHeaderContent": false,
-              "contextPath": "/RFQEvents",
+              "contextPath": "/Events",
               "navigation": {
                 "items": {
                   "detail": {
@@ -182,7 +182,7 @@
           "options": {
             "settings": {
               "editableHeaderContent": false,
-              "contextPath": "/RFQEvents/items"
+              "contextPath": "/Events/items"
             }
           }
         }

@@ -3,6 +3,11 @@
   "authenticationMethod": "route",
   "routes": [
     {
+  "source": "^/user-api(.*)",
+  "target": "$1",
+  "service": "sap-approuter-userapi"
+},
+    {
       "source": "^/odata/v4/(.*)$",
       "target": "/odata/v4/$1",
       "destination": "bidequalization-dest-service",
