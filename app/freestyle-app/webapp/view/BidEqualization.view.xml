@@ -287,7 +287,7 @@
                                             </Select>
 
                                             <!-- Benchmark End Use Cost -->
-                                            <Label text="Benchmark End Use Cost" />
+                                            <Label text="Benchmark End Use Cost" required="true"/>
                                             <FlexBox direction="Row" alignItems="Center">
                                                 <Input id='leftEndUseCost' value="{
     path: 'leftEndUseCost',
@@ -312,7 +312,7 @@
                                             </FlexBox>
 
                                             <!-- Shipping Cost -->
-                                            <Label text="Shipping Cost" />
+                                            <Label text="Shipping Cost" required="true"/>
                                             <FlexBox direction="Row" alignItems="Center">
                                             <Input id="leftShippingCost" value="{
     path: 'leftShippingCost',
@@ -337,7 +337,7 @@
                                             </FlexBox>
 
                                             <!-- Handling Cost -->
-                                            <Label text="Handling Cost" />
+                                            <Label text="Handling Cost" required="true"/>
                                             <FlexBox direction="Row" alignItems="Center">
                                                 <Input id="leftHandlingCost"
                                                 value="{
@@ -570,9 +570,10 @@
                                             </FlexBox>
 
                                             <!-- Local End Use Cost -->
-                                            <Label text="Local End Use Cost" />
+                                            <Label text="Local End Use Cost" required="true" />
                                             <FlexBox direction="Row" alignItems="Center">
-                                                <Input id="rightLocalEndUseCost" 
+                                                <Input id="rightLocalEndUseCost"
+                                                required="true"
                                                 value="{
     path: 'rightLocalEndUseCost',
     mode:'sap.ui.model.BindingMode.OneWay',
@@ -696,8 +697,7 @@
                             <FlexBox direction="Row" wrap="Wrap" alignContent="Start">
                                 <Button
                                     text="Calculate"
-                                    type="Emphasized"
-                                    icon="sap-icon://calculate"
+                                    type="Emphasized"                                    
                                     press=".onCalculate"
                                     class="sapUiSmallMarginEnd sapUiSmallMarginBottom" />
                                 <Button
@@ -713,20 +713,22 @@
                                     icon="sap-icon://flag"
                                     press=".onMarkBenchmark"
                                     enabled="{appModel>/calculated}"
-                                    class="sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+                                    class="sapUiSmallMarginEnd sapUiSmallMarginBottom" visible="false"/>
                                 <Button
                                     text="Generate PDF"
                                     type="Default"
                                     icon="sap-icon://pdf-attachment"
                                     press=".onGeneratePDF"
                                     enabled="{= !!${appModel>/lastComparisonID} }"
-                                    class="sapUiSmallMarginEnd sapUiSmallMarginBottom" />
+                                    class="sapUiSmallMarginEnd sapUiSmallMarginBottom" 
+                                    visible="false"/>
                                 <Button
                                     text="Reset"
                                     type="Transparent"
                                     icon="sap-icon://reset"
                                     press=".onReset"
-                                    class="sapUiSmallMarginBottom" />
+                                    class="sapUiSmallMarginBottom" visible="false"
+                                    />
                             </FlexBox>
                         </uxap:blocks>
                     </uxap:ObjectPageSubSection>

@@ -15,7 +15,7 @@
 |**UI5 Version**<br>1.146.0|
 |**Enable TypeScript**<br>False|
 |**Add Eslint configuration**<br>False|
-|**Main Entity**<br>RFQEvents|
+|**Main Entity**<br>Events|
 |**Navigation Entity**<br>items|
 
 ## rfq-events

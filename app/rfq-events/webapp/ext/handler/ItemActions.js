@@ -18,48 +18,173 @@ sap.ui.define(["sap/m/MessageToast"], function (MessageToast) {
     this
   );
 },
-    openEqualization: function (oBindingContext, aSelectedContexts) {
 
 
-      var sUrl = "/user-api/currentUser";
-    var oUserModel1 = new sap.ui.model.json.JSONModel(sUrl);
-    
-    oUserModel1.attachRequestCompleted(function() {
-        if (oUserModel1.getData().email) {
-            console.log("Logged in user: " + oUserModel1.getData().email);
-        }
-    });
-    
-      if (!aSelectedContexts || aSelectedContexts.length === 0) {
-        MessageToast.show("Please select an RFQ Item first.");
-        return;
-      }
+openEqualization: function (oBindingContext, aSelectedContexts) {
 
-      var oCtx = aSelectedContexts[0];
-      var sItemId = oCtx.getProperty("itemNo");
-      var sCommodity = oCtx.getProperty("commodity") || sItemId;
+  if (!aSelectedContexts || aSelectedContexts.length === 0) {
 
-      if (!sItemId) {
-        MessageToast.show("Could not read item ID.");
-        return;
-      }
+    MessageToast.show(
+      "Please select an RFQ Item first."
+    );
 
-      MessageToast.show("Opening Bid Equalization for: " + sCommodity, {
-        duration: 2500,
+    return;
+
+  }
+
+  var oCtx = aSelectedContexts[0];
+
+  var sItemId =
+    oCtx.getProperty("itemNo");
+
+  // var sCommodity =
+  //   oCtx.getProperty("commodity") || sItemId;
+
+  if (!sItemId) {
+
+    MessageToast.show(
+      "Could not read item ID."
+    );
+
+    return;
+
+  }
+
+  MessageToast.show(
+    "Opening Bid Equalization for: " + sItemId,
+    {
+      duration: 2500
+    }
+  );
+
+  // -----------------------------------
+  // PARAMETERS
+  // -----------------------------------
+
+  var oParams = {
+    rfqItemID: sItemId
+  };
+
+  // -----------------------------------
+  // CASE 1:
+  // RUNNING INSIDE LAUNCHPAD / WORKZONE
+  // -----------------------------------
+
+  if (
+    sap.ushell &&
+    sap.ushell.Container
+  ) {
+
+    sap.ushell.Container
+      .getServiceAsync(
+        "CrossApplicationNavigation"
+      )
+      .then(function (oCrossAppNav) {
+
+        oCrossAppNav.toExternal({
+
+          target: {
+
+            // configure in target mapping
+            semanticObject:
+              "bidequalization",
+
+            action:
+              "display"
+
+          },
+
+          params: oParams
+
+        });
+
       });
 
-      // var sUrl =
-      //   "/freestyle-app/webapp/index.html?rfqItemID=" +
-      //   encodeURIComponent(sItemId);
-      // setTimeout(function () {
-      //   window.open(sUrl, "_blank");
-      // }, 500);
+    return;
 
-      var sUrl = "https://sao-corp-dev-9bgapsnr.launchpad.cfapps.sa30.hana.ondemand.com/230b382f-590f-406d-b028-cc31d3139fca.bidequalizationservice.bidequalization-1.0.0/index.html" + "?rfqItemID=" + encodeURIComponent(sItemId);
+  }
 
-          setTimeout(function () {
-            window.open(sUrl, "_blank");
-          }, 500);
-    },
+
+  // -----------------------------------
+  // CASE 2 :: LOCAL BAS TESTING
+  // -----------------------------------
+
+  var sOrigin =
+    window.location.origin;
+
+  var bLocal =
+    window.location.hostname.includes(
+      "applicationstudio.cloud.sap"
+    );
+
+  var sUrl = "";
+
+  if (bLocal) {
+
+    sUrl =
+      sOrigin +
+      "/freestyle-app/index.html" +
+      "?rfqItemID=" +
+      encodeURIComponent(sItemId);
+
+  }
+
+  // -----------------------------------
+  // CASE 3:
+  // STANDALONE HTML5 APP
+  // -----------------------------------
+  else{
+  sUrl = sOrigin + 
+    "/230b382f-590f-406d-b028-cc31d3139fca.bidequalizationservice.bidequalization-1.0.0/index.html" +
+    "?rfqItemID=" +
+    encodeURIComponent(sItemId);}
+
+  setTimeout(function () {
+
+    window.open(
+      sUrl,
+      "_blank"
+    );
+
+  }, 300);
+
+},
+
+
+
+    // openEqualization: function (oBindingContext, aSelectedContexts) {
+
+    
+    //   if (!aSelectedContexts || aSelectedContexts.length === 0) {
+    //     MessageToast.show("Please select an RFQ Item first.");
+    //     return;
+    //   }
+
+    //   var oCtx = aSelectedContexts[0];
+    //   var sItemId = oCtx.getProperty("itemNo");
+    //   var sCommodity = oCtx.getProperty("commodity") || sItemId;
+
+    //   if (!sItemId) {
+    //     MessageToast.show("Could not read item ID.");
+    //     return;
+    //   }
+
+    //   MessageToast.show("Opening Bid Equalization for: " + sCommodity, {
+    //     duration: 2500,
+    //   });
+
+    //   // var sUrl =
+    //   //   "/freestyle-app/webapp/index.html?rfqItemID=" +
+    //   //   encodeURIComponent(sItemId);
+    //   // setTimeout(function () {
+    //   //   window.open(sUrl, "_blank");
+    //   // }, 500);
+
+    //   var sUrl = "https://sao-corp-dev-9bgapsnr.launchpad.cfapps.sa30.hana.ondemand.com/230b382f-590f-406d-b028-cc31d3139fca.bidequalizationservice.bidequalization-1.0.0/index.html" + "?rfqItemID=" + encodeURIComponent(sItemId);
+
+    //       setTimeout(function () {
+    //         window.open(sUrl, "_blank");
+    //       }, 500);
+    // },
   };
 });

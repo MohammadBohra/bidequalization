@@ -10,7 +10,7 @@ sap.ui.define(['sap/fe/test/ObjectPage'], function(ObjectPage) {
         {
             appId: 'rfqevents',
             componentId: 'RFQItemsObjectPage',
-            contextPath: '/RFQEvents/items'
+            contextPath: '/Events/items'
         },
         CustomPageDefinitions
     );

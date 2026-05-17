@@ -20,7 +20,7 @@
     "entityRelatedConfig": [
       {
         "type": "Main Entity",
-        "value": "RFQEvents"
+        "value": "Events"
       },
       {
         "type": "Navigation Entity",

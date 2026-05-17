@@ -49,17 +49,6 @@ sap.ui.define(
 
       onInit: function () {
 
-
-
-        // Call the user API provided by the approuter
-    var sUrl = "/user-api/currentUser";
-    var oUserModel1 = new sap.ui.model.json.JSONModel(sUrl);
-    
-    oUserModel1.attachRequestCompleted(function() {
-        if (oUserModel1.getData().email) {
-            console.log("Logged in user: " + oUserModel1.getData().email);
-        }
-    });
         
         this._handleStartupNavigation();
         const oRouter = this.getOwnerComponent().getRouter();
@@ -94,7 +83,7 @@ const sTargetApp = "rfqevents-0.0.1/index.html";
 const sTargetUrl =
   sBase +
   sTargetApp +
-  "#/RFQEvents('" +
+  "#/Events('" +
   encodeURIComponent(rfqEvent) +
   "')";
 
@@ -106,12 +95,65 @@ window.location.replace(sTargetUrl);
     console.error("RFQ mapping failed", e);
   }
 },
+_getUrlParameter: function (sParam) {
+
+    // -----------------------------------
+    // 1. Direct query param
+    // -----------------------------------
+    let oParams = new URLSearchParams(window.location.search);
+
+    let sValue = oParams.get(sParam);
+
+    if (sValue) {
+        return sValue;
+    }
+
+    // -----------------------------------
+    // 2. FLP startup params
+    // sap-startup-params=rfqItemID%3D410469017
+    // -----------------------------------
+    const sStartupParams = oParams.get("sap-startup-params");
+
+    if (sStartupParams) {
+
+        const oStartupParams =
+            new URLSearchParams(decodeURIComponent(sStartupParams));
+
+        sValue = oStartupParams.get(sParam);
+
+        if (sValue) {
+            return sValue;
+        }
+    }
+
+    // -----------------------------------
+    // 3. Hash-based params
+    // #app?rfqItemID=123
+    // -----------------------------------
+    const sHash = window.location.hash || "";
+
+    if (sHash.includes("?")) {
+
+        const sHashQuery = sHash.split("?")[1];
+
+        const oHashParams = new URLSearchParams(sHashQuery);
+
+        sValue = oHashParams.get(sParam);
+
+        if (sValue) {
+            return sValue;
+        }
+    }
+
+    return null;
+},
 
       _onRouteMatched: function () {
         // Read rfqItemID from the browser URL query string
-        const sSearch = window.location.search;
-        const oParams = new URLSearchParams(sSearch);
-        const sItemID = oParams.get("rfqItemID");
+        // const sSearch = window.location.search;
+        // const oParams = new URLSearchParams(sSearch);
+        // const sItemID = oParams.get("rfqItemID");
+        const sItemID = this._getUrlParameter("rfqItemID");
 
         const oModel = this.getOwnerComponent().getModel("appModel");
         const oModelOdata = this.getOwnerComponent().getModel();

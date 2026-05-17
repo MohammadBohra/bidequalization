@@ -104,12 +104,8 @@
           "pattern": "Events({EventId}):?query:",
           "name": "RFQEventsObjectPage",
           "target": "RFQEventsObjectPage"
-        },
-        {
-          "pattern": "Events({EventId})/items({key2}):?query:",
-          "name": "RFQItemsObjectPage",
-          "target": "RFQItemsObjectPage"
         }
+       
       ],
       "targets": {
         "RFQEventsList": {

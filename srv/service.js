@@ -16,7 +16,7 @@ const { SELECT } = cds.ql
 
 module.exports = class BidEqualizationService extends cds.ApplicationService {
   async init() {
-    const forum = await cds.connect.to('ForumService');
+    
     // ─────────────────────────────────────────────────────────────
     // ACTION: calculateComparison
     // ─────────────────────────────────────────────────────────────

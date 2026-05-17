@@ -17,7 +17,7 @@ using {
     cuid,
     managed
 } from '@sap/cds/common';
-using { ForumService as external } from '../srv/external/ForumService';
+
 
 // ─────────────────────────────────────────────
 // RFQ Event (Header)
@@ -47,10 +47,10 @@ using { ForumService as external } from '../srv/external/ForumService';
 entity Events  {  
   key EventId     : String(20) @title: 'RFQ Event ID';
   EventDescription     : String(50) @title: 'RFQ Event Name';  
-  EventStartDate   : Timestamp; 
-  EventEndDate     : Timestamp; 
+  EventStartDate   : Timestamp @title: 'Event Starte Date';
+  EventEndDate     : Timestamp @title: 'Event End Date'; 
   EventStatus      : String(50) @title: 'Event Status';
-  SourcingProject : String(20);
+  SourcingProject : String(20) @title: 'Sourcing Project';
   ForumId     : String(50);
   ForumStatus      : String(50);
   items       : Composition of many RFQItem

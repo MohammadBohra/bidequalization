@@ -125,14 +125,13 @@ annotate BidEqualizationService.Events with @(UI: {
             Value: EventId,
             Label: 'RFQ ID'
         },
-        // {
-        //     Value: eventName,
-        //     Label: 'RFQ Name'
-        // },
         {
             Value: EventDescription,
             Label: 'Description'
         },
+        {Value: EventStartDate},
+        {Value: EventEndDate},
+        {Value: SourcingProject},
         {
             Value: EventStatus,
             Label: 'Status'
