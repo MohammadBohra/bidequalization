@@ -28,9 +28,12 @@
   "scripts": {
     "start": "cds-serve",
     "watch": "cds watch --livereload false",
-    "build": "cds build --production",
+    "build": "rimraf resources mta_archives && mbt build --mtar archive",
     "watch-rfq-events": "cds watch --open rfqevents/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-freestyle": "cds watch --open freestyle-app/webapp/index.html --livereload false"
+    "watch-freestyle": "cds watch --open freestyle-app/webapp/index.html --livereload false",
+    "watch-formula-admin-app": "cds watch --open com.aramco.formulaadminapp/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "undeploy": "cf undeploy bid-equalization --delete-services --delete-service-keys --delete-service-brokers",
+    "deploy": "cf deploy mta_archives/archive.mtar --retries 1"
   },
   "cds": {
     "connectivity": true,
@@ -39,7 +42,6 @@
       "db": {
         "kind": "hana"
       },
-     
       "uaa": {
         "kind": "xsuaa"
       },
@@ -64,6 +66,7 @@
     "app/*"
   ],
   "sapux": [
-    "app/rfq-events"
+    "app/rfq-events",
+    "app/formula-admin-app"
   ]
 }

@@ -233,7 +233,7 @@ entity BidFormula : cuid, managed {
     isActive    : Boolean default false @title: 'Is Active';
 
     // ===== LEFT CONDITIONS =====
-  leftBenchmarkBidType      : String;
+  leftBenchmarkBidType      : String;       
   leftDevelopmentType       : String;
   leftDeliveryMode          : String;
 

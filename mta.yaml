@@ -1,190 +1,191 @@
 _schema-version: 3.3.0
 ID: bid-equalization
+description: SAP CAP Bid Equalization System for Procurement
 version: 1.0.0
-description: "SAP CAP Bid Equalization System for Procurement"
+modules:
+- name: bid-equalization-srv
+  type: nodejs
+  path: gen/srv
+  requires:
+  - name: bid-equalization-auth
+  - name: bid-equalization-db
+  - name: qaforum-db
+  - name: bid-equalization-destination
+  - name: bid-equalization-connectivity
+  provides:
+  - name: srv-api
+    properties:
+      srv-url: ${default-url}
+  parameters:
+    buildpack: nodejs_buildpack
+    instances: 1
+  build-parameters:
+    builder: npm-ci
+- name: bid-equalization-db-deployer
+  type: hdb
+  path: gen/db
+  requires:
+  - name: bid-equalization-db
+    properties:
+      TARGET_CONTAINER: ~{hdi-container-name}
+  - name: qaforum-db
+    group: SERVICE_REPLACEMENTS
+    properties:
+      key: qaforum-db-key
+      service: ~{the-service-name}
+  parameters:
+    buildpack: nodejs_buildpack
+- name: bid-equalization-destinations
+  type: com.sap.application.content
+  requires:
+  - name: bid-equalization-auth
+    parameters:
+      service-key:
+        name: bid-equalization-auth-key
+  - name: bid-equalization-html5-repo-host
+    parameters:
+      service-key:
+        name: bid-equalization-html5-repo-host-key
+  - name: srv-api
+  - name: bid-equalization-destination
+    parameters:
+      content-target: true
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: bid-equalization-html5-repository
+          ServiceInstanceName: bid-equalization-html5-repo-host
+          ServiceKeyName: bid-equalization-html5-repo-host-key
+          sap.cloud.service: bidequalization.service
+        - Authentication: OAuth2UserTokenExchange
+          Name: bid-equalization-auth
+          ServiceInstanceName: bid-equalization-auth
+          ServiceKeyName: bid-equalization-auth-key
+          sap.cloud.service: bidequalization.service
+        existing_destinations_policy: update
+  build-parameters:
+    no-source: true
+- name: bid-equalization-app-deployer
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: bid-equalization-html5-repo-host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - rfq-events.zip
+      name: bidequalizationrfqevents
+      target-path: resources/
+    - artifacts:
+      - freestyle-app.zip
+      name: bidcomparison
+      target-path: resources/
+    - artifacts:
+      - comaramcoformulaadminapp.zip
+      name: comaramcoformulaadminapp
+      target-path: resources/
+- name: bidequalizationrfqevents
+  type: html5
+  path: app/rfq-events
+  parameters:
+    html5-app-name: bidequalizationrfqevents
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: bidcomparison
+  type: html5
+  path: app/freestyle-app
+  parameters:
+    html5-app-name: bidcomparison
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: comaramcoformulaadminapp
+  type: html5
+  path: app/formula-admin-app
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: bid-equalization-auth
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      tenant-mode: dedicated
+      xsappname: bid-equalization-${org}-${space}
+    path: ./xs-security.json
+    service: xsuaa
+    service-plan: application
+- name: bid-equalization-db
+  type: com.sap.xs.hdi-container
+  parameters:
+    service: hana
+    service-plan: hdi-shared
+  properties:
+    hdi-container-name: ${service-name}
+- name: qaforum-db
+  type: org.cloudfoundry.existing-service
+  parameters:
+    service-name: qaforum-db
+  properties:
+    the-service-name: ${service-name}
+- name: bid-equalization-destination
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            HTML5.DynamicDestination: true
+            HTML5.ForwardAuthToken: true
+            Name: bidequalization-dest-service
+            ProxyType: Internet
+            Type: HTTP
+            URL: ~{srv-api/srv-url}
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+    service: destination
+    service-plan: lite
+  requires:
+  - name: srv-api
+- name: bid-equalization-html5-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-plan: app-host
+- name: bid-equalization-connectivity
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: connectivity
+    service-plan: lite
 parameters:
-  enable-parallel-deployments: true
   deploy_mode: html5-repo
+  enable-parallel-deployments: true
 build-parameters:
   before-all:
-    - builder: custom
-      commands:
-        - npm ci
-        - npx cds build --production
-modules:
-  - name: bid-equalization-srv
-    type: nodejs
-    path: gen/srv
-    parameters:
-      instances: 1
-      buildpack: nodejs_buildpack
-    build-parameters:
-      builder: npm-ci
-    provides:
-      - name: srv-api # required by consumers of CAP services (e.g. approuter)
-        properties:
-          srv-url: ${default-url}
-    requires:
-      - name: bid-equalization-auth
-      - name: bid-equalization-db
-      - name: qaforum-db        
-      - name: bid-equalization-destination      
-      - name: bid-equalization-connectivity      
-
-  - name: bid-equalization-db-deployer
-    type: hdb
-    path: gen/db
-    parameters:
-      buildpack: nodejs_buildpack
-    requires:
-      - name: bid-equalization-db
-        properties:
-          TARGET_CONTAINER: ~{hdi-container-name}
-      - name: qaforum-db
-        group: SERVICE_REPLACEMENTS
-        properties:
-          key: qaforum-db-key
-          service: ~{the-service-name}
-
-  - name: bid-equalization-destinations
-    type: com.sap.application.content
-    requires:
-      - name: bid-equalization-auth
-        parameters:
-          service-key:
-            name: bid-equalization-auth-key
-      - name: bid-equalization-html5-repo-host
-        parameters:
-          service-key:
-            name: bid-equalization-html5-repo-host-key
-      - name: srv-api
-      - name: bid-equalization-destination      
-        parameters:
-          content-target: true
-    build-parameters:
-      no-source: true
-    parameters:
-      content:
-        instance:
-          existing_destinations_policy: update
-          destinations:
-            - Name: bid-equalization-html5-repository
-              ServiceInstanceName: bid-equalization-html5-repo-host
-              ServiceKeyName: bid-equalization-html5-repo-host-key
-              sap.cloud.service: bidequalization.service
-            - Name: bid-equalization-auth
-              Authentication: OAuth2UserTokenExchange
-              ServiceInstanceName: bid-equalization-auth
-              ServiceKeyName: bid-equalization-auth-key
-              sap.cloud.service: bidequalization.service
-
-  - name: bid-equalization-app-deployer
-    type: com.sap.application.content
-    path: .
-    requires:
-      - name: bid-equalization-html5-repo-host
-        parameters:
-          content-target: true
-    build-parameters:
-      build-result: resources
-      requires:        
-        - name: bidequalizationrfqevents
-          artifacts:
-            - rfq-events.zip
-          target-path: resources/
-        - name: bidcomparison
-          artifacts:
-            - freestyle-app.zip
-          target-path: resources/
-
-
-  
-  - name: bidequalizationrfqevents
-    type: html5
-    path: app/rfq-events
-    build-parameters:
-      build-result: dist
-      builder: custom
-      commands:
-        - npm install
-        - npm run build:cf
-      supported-platforms:
-        []
-    parameters:
-      html5-app-name: bidequalizationrfqevents
-  
-  - name: bidcomparison
-    type: html5
-    path: app/freestyle-app
-    build-parameters:
-      build-result: dist
-      builder: custom
-      commands:
-        - npm install
-        - npm run build:cf
-      supported-platforms:
-        []
-    parameters:
-      html5-app-name: bidcomparison
-
-resources:
-  - name: bid-equalization-auth
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: xsuaa
-      service-plan: application
-      path: ./xs-security.json
-      config:
-        xsappname: bid-equalization-${org}-${space}
-        tenant-mode: dedicated
-  - name: bid-equalization-db
-    type: com.sap.xs.hdi-container
-    parameters:
-      service: hana
-      service-plan: hdi-shared
-    properties:
-      hdi-container-name: ${service-name}
-
-  - name: qaforum-db
-    type: org.cloudfoundry.existing-service
-    parameters:
-      service-name: qaforum-db
-    properties:
-      the-service-name: ${service-name}
-
-  - name: bid-equalization-destination
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: destination
-      service-plan: lite
-      config:
-        HTML5Runtime_enabled: true
-        init_data:
-          instance:
-            existing_destinations_policy: update
-            destinations:
-              - Name: bidequalization-dest-service
-                URL: ~{srv-api/srv-url}
-                Authentication: NoAuthentication
-                Type: HTTP
-                ProxyType: Internet
-                HTML5.ForwardAuthToken: true
-                HTML5.DynamicDestination: true
-              - Name: ui5
-                Authentication: NoAuthentication
-                ProxyType: Internet
-                Type: HTTP
-                URL: https://ui5.sap.com
-    requires:
-      - name: srv-api
-
-  - name: bid-equalization-html5-repo-host
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: html5-apps-repo
-      service-plan: app-host
-  - name: bid-equalization-connectivity
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: connectivity
-      service-plan: lite
+  - builder: custom
+    commands:
+    - npm ci
+    - npx cds build --production

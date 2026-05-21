@@ -15,11 +15,13 @@ service BidEqualizationService @(requires: 'authenticated-user'){
     // Entity Projections
     // ─────────────────────────────────────────────
 
+// @UI.SelectionFields: [
+  //   leftBenchmarkBidType,
+// ]
+ @odata.draft.enabled
+entity BidFormula as projection on BidEqualization.BidFormula;
     entity Events      as projection on BidEqualization.Events;
     
-
-
-
     entity RFQItems       as projection on BidEqualization.RFQItem;
 
     entity EventSuppliers      as projection on BidEqualization.EventSuppliers;
