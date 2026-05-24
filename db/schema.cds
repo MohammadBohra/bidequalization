@@ -225,25 +225,32 @@ entity BidComparison : cuid, managed {
 // ─────────────────────────────────────────────
 entity BidFormula : cuid, managed {
     name        : String(100)           @title: 'Formula Name';
-    expression  : String(500)           @title: 'Expression';
-    trafficexpression  : String(500)           @title: 'Expression';
-    dutyexpression  : String(500)           @title: 'Expression';
-    premiumexpression  : String(500)           @title: 'Expression';
-    description : String(250)           @title: 'Description';
-    isActive    : Boolean default false @title: 'Is Active';
+    expression  : String(500)           @title: 'Bid Equalization Expression';
+    trafficexpression  : String(500)           @title: 'Traffic expression';
+    dutyexpression  : String(500)           @title: 'Duty expression';
+    premiumexpression  : String(500)           @title: 'Premium expression';
+    description : String(250)           @title: 'Description' @UI.Hidden;
+    isActive    : Boolean default false @title: 'Is Active' @UI.Hidden;
 
     // ===== LEFT CONDITIONS =====
-  leftBenchmarkBidType      : String;       
-  leftDevelopmentType       : String;
-  leftDeliveryMode          : String;
+  leftBenchmarkBidType      : String @title : 'Benchmark Bid Type' @UI.Hidden @readonly; 
+  leftBenchmarkBidTypeDesc      : String @title : 'Benchmark Bid Type' @readonly;
 
-  leftBidValueRange           : String;
+  leftDevelopmentType       : String @title : 'Development Type ' @readonly;
 
-  leftExceptionalWeight     : String;
+  leftDeliveryMode          : String @title : 'Delivery Mode' @UI.Hidden;
+  leftDeliveryModeDesc          : String @title : 'Delivery Mode' @readonly;
+
+  leftBidValueRange           : String @title : 'Bid Value Range' @UI.Hidden;
+  leftBidValueRangeDesc       : String @title : 'Bid Value Range' @readonly;
+
+  leftExceptionalWeight     : String @title : 'Exceptional Weight' @readonly;
 
   // ===== RIGHT CONDITIONS (if needed for matching) =====  
-  rightLocalBidType         : String;
-  ldorexpression  : String(500)
+  rightLocalBidType         : String @title : 'Local Bid Type' @UI.Hidden;
+  rightLocalBidTypeDesc     : String @title : 'Local Bid Type' @readonly;
+
+  ldorexpression  : String(500) @title : 'LDOR Expression';
 }
 
 

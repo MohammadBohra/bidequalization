@@ -49,7 +49,8 @@
         "[development]": {
           "kind": "mocked",
           "users": {
-            "Mbohra-v@Ejada.com": {}
+            "Mbohra-v@Ejada.com": {},
+            "User1": {}
           }
         },
         "[production]": {
@@ -67,6 +68,7 @@
   ],
   "sapux": [
     "app/rfq-events",
+    "app/formula-admin-app",
     "app/formula-admin-app"
   ]
 }

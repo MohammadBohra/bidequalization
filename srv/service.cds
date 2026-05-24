@@ -18,8 +18,8 @@ service BidEqualizationService @(requires: 'authenticated-user'){
 // @UI.SelectionFields: [
   //   leftBenchmarkBidType,
 // ]
- @odata.draft.enabled
-entity BidFormula as projection on BidEqualization.BidFormula;
+ 
+// entity BidFormula as projection on BidEqualization.BidFormula;
     entity Events      as projection on BidEqualization.Events;
     
     entity RFQItems       as projection on BidEqualization.RFQItem;
@@ -32,30 +32,52 @@ entity BidFormula as projection on BidEqualization.BidFormula;
         *,
         additionalFields
     };
-
+    @odata.draft.enabled
     entity BidFormulas    as projection on BidEqualization.BidFormula;
     entity SelectItems as projection on BidEqualization.SelectItems;
-    
 
-    // ─────────────────────────────────────────────
+    // Inside your service definition (e.g., CatService)
+
+// 1. Create a view helper to fetch unique filter values
+// Inside your service block
+
+@readonly
+entity VH_leftBenchmarkBidTypeDesc as select from BidEqualization.BidFormula {
+    key leftBenchmarkBidTypeDesc
+} group by leftBenchmarkBidTypeDesc;
+
+@readonly
+entity VH_leftDevelopmentType as select from BidEqualization.BidFormula {
+    key leftDevelopmentType
+} group by leftDevelopmentType;
+
+@readonly
+entity VH_leftDeliveryModeDesc as select from BidEqualization.BidFormula {
+    key leftDeliveryModeDesc
+} group by leftDeliveryModeDesc;
+
+@readonly
+entity VH_leftBidValueRangeDesc as select from BidEqualization.BidFormula {
+    key leftBidValueRangeDesc
+} group by leftBidValueRangeDesc;
+
+@readonly
+entity VH_leftExceptionalWeight as select from BidEqualization.BidFormula {
+    key leftExceptionalWeight
+} group by leftExceptionalWeight;
+
+@readonly
+entity VH_rightLocalBidTypeDesc as select from BidEqualization.BidFormula {
+    key rightLocalBidTypeDesc
+} group by rightLocalBidTypeDesc;
+
+
+    
+  // ─────────────────────────────────────────────
     // Actions
     // ─────────────────────────────────────────────
 
-    /**
-     * Calculate equalized bids for two suppliers on a given RFQ Item.
-     * Uses the active BidFormula expression to compute totals.
-     * Returns equalized values and the winning supplier ID.
-     */
-    // action calculateComparison(rfqItemID: UUID,
-    //                            supplierLeft: UUID,
-    //                            supplierRight: UUID) returns {
-    //     equalizedLeft  : Decimal;
-    //     equalizedRight : Decimal;
-    //     winner         : UUID;
-    //     formulaName    : String;
-    //     formulaExpr    : String;
-    // };
-
+  
 
     action calculateComparison(
     leftBenchmarkBidType   : String,
