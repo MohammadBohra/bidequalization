@@ -17,16 +17,27 @@ const { SELECT } = cds.ql
 module.exports = class BidEqualizationService extends cds.ApplicationService {
   async init() {
     
-    // ─────────────────────────────────────────────────────────────
-    // ACTION: calculateComparison
-    // ─────────────────────────────────────────────────────────────
+    /**
+     * Calculates the equalized bid for the given supplier
+     * 
+     * @param {Object} req - The request object
+     * @returns {Object} The result containing the equalized bid and formula details  
+     * 
+     */
     this.on("calculateComparison", async (req) => {
   try {
     const data = req.data;
 
     const bidValue = parseFloat(data.leftBidValue) || 0;
 
-    // ================= FETCH MATCHING FORMULA =================
+    /**
+     * Fetches the active bid formula that matches the given criteria.
+     * If no matching formula is found, an error is returned.
+     * 
+     * @param {Object} data - The input data containing bid and supplier details
+     * @returns {Object} The matching bid formula
+     * 
+     */
     const formula = await SELECT.one.from("BidEqualization.BidFormula")
       .where({
         // isActive: true,
@@ -42,7 +53,11 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
       return data;
     }
 
-    // ================= EVALUATE =================
+    /**
+     * Calculates the equalized bid using the active formula and the provided bid details.
+     * The formula is evaluated dynamically, substituting the relevant variables with their values.
+     * 
+     */
     const leftEqualizedBid = _evaluateFormula(formula, {
       bidValue,
       shippingCost: parseFloat(data.leftShippingCost) || 0,
@@ -64,6 +79,15 @@ module.exports = class BidEqualizationService extends cds.ApplicationService {
   }
 });
 
+/**
+ * READ action for EventSuppliers entity
+ * 
+ * This handler supports:
+ * - Single record read (by EventId, ANID, SupplierContactEmail)
+ * - List read with optional $filter on EventId
+ * 
+ * 
+ */
 
 this.on('READ', 'EventSuppliers', async (req) => {
 
@@ -81,9 +105,12 @@ this.on('READ', 'EventSuppliers', async (req) => {
 
   const values = []
 
-  // =====================================
-  // OBJECT PAGE / SINGLE RECORD
-  // =====================================
+  /**
+   * Handles single record read when keys are provided in the request parameters.
+   * 
+   * 
+   */
+
   if (req.params?.length) {
 
     const keys = req.params[0]
@@ -106,9 +133,12 @@ this.on('READ', 'EventSuppliers', async (req) => {
     return result[0]
   }
 
-  // =====================================
-  // HANDLE $filter
-  // =====================================
+/**
+ * Handles $filter query parameter to filter EventSuppliers by EventId.
+ * 
+ * 
+ */
+
   const where = req.query?.SELECT?.where
 
   if (where) {
@@ -197,6 +227,16 @@ this.on('READ', 'EventSuppliers', async (req) => {
 //   return result
 // })
 
+/**
+ * READ action for RFQItems entity
+ * 
+ * This handler supports:
+ *  - Single record read (by itemNo)
+ * - Navigation read (by parent EventId)
+ * 
+ * Note: SourcingProject filter is currently commented out due to data inconsistencies.
+ */
+
 this.on('READ', 'RFQItems', async (req) => {
 
   const tx = cds.tx(req)
@@ -236,9 +276,11 @@ this.on('READ', 'Events', async (req) => {
   const db = await cds.connect.to('db');
   const userId = req.user.id;
 
-  // =====================================================
-  // OBJECT PAGE
-  // =====================================================
+  /**
+   * Handles single record read when keys are provided in the request parameters.
+   * 
+   * 
+   */
   if (req.params?.length) {
 
     const keys = req.params[0];
@@ -263,9 +305,11 @@ this.on('READ', 'Events', async (req) => {
     return result[0];
   }
 
-  // =====================================================
-  // LIST REPORT
-  // =====================================================
+/**
+ * Handles list read for Events entity, filtering by the logged-in user and optional $filter parameters.
+ * 
+ * 
+ */
 
   let sql = `
     SELECT DISTINCT
@@ -288,6 +332,12 @@ this.on('READ', 'Events', async (req) => {
   // =====================================================
   // FIORI FILTER SUPPORT
   // =====================================================
+
+  /**
+   * Handles $filter query parameter to filter Events by EventId and EventStatus.
+   * 
+   * 
+   */
 
   const where = req.query.SELECT?.where;
 
@@ -316,6 +366,11 @@ this.on('READ', 'Events', async (req) => {
   // SORTING SUPPORT
   // =====================================================
 
+  /**
+   * Handles $orderby query parameter to sort Events by specified fields.
+   * 
+   * 
+   */
   const orderBy = req.query.SELECT?.orderBy;
 
   if (orderBy?.length) {
@@ -497,9 +552,12 @@ this.on('READ', 'Events', async (req) => {
 //       };
 //     });
 
-    // ─────────────────────────────────────────────────────────────
-    // ACTION: saveComparison
-    // ─────────────────────────────────────────────────────────────
+    /**
+     * Saves the bid comparison result to the BidComparison table.
+     * 
+     * 
+     */
+
     this.on("saveComparison", async (req) => {
       const {
         rfqItemID,
@@ -512,7 +570,10 @@ this.on('READ', 'Events', async (req) => {
       } = req.data;
       const db = cds.db;
 
-      // Insert new BidComparison record
+      /**
+       * Generates a new UUID for the BidComparison record and inserts it into the database.
+       * 
+       */
       const id = cds.utils.uuid();
       await db.run(
         INSERT.into("BidEqualization.BidComparison").entries({
@@ -531,21 +592,31 @@ this.on('READ', 'Events', async (req) => {
         }),
       );
 
-      // Return the saved comparison
+      /**
+       * Fetches the newly created BidComparison record from the database and returns it to the client.
+       * 
+       */
       const saved = await db.run(
         SELECT.one.from("BidEqualization.BidComparison").where({ ID: id }),
       );
       return saved;
     });
 
-    // ─────────────────────────────────────────────────────────────
-    // ACTION: markBenchmark
-    // ─────────────────────────────────────────────────────────────
+    /**
+     * Marks a specific supplier's bid as the benchmark for a given RFQ item.
+     *
+     * 
+     */
     this.on("markBenchmark", async (req) => {
       const { rfqItemID, supplierID } = req.data;
       const db = cds.db;
 
-      // Clear existing benchmark for this item
+      /**
+       * Sets all SupplierBid records for the specified RFQ item to isBenchmark = false,
+       *  effectively clearing any existing benchmark.
+       * 
+       * 
+       */
       await db.run(
         UPDATE("BidEqualization.SupplierBid")
           .set({ isBenchmark: false })
@@ -553,6 +624,12 @@ this.on('READ', 'Events', async (req) => {
       );
 
       // Set new benchmark
+      /**
+       * Sets the specified supplier's bid for the given RFQ item to isBenchmark = true,
+       * marking it as the new benchmark bid.
+       * 
+       * 
+       */
       await db.run(
         UPDATE("BidEqualization.SupplierBid")
           .set({ isBenchmark: true })
@@ -561,15 +638,19 @@ this.on('READ', 'Events', async (req) => {
 
       return true;
     });
-
-    // ─────────────────────────────────────────────────────────────
-    // ACTION: generatePDF
-    // ─────────────────────────────────────────────────────────────
-    
+    /**
+     * Generates a PDF report for a specific BidComparison record, including details of the RFQ item, suppliers, and equalization results.
+     * 
+     * 
+     */
     this.on("generatePDF", async (req) => {
       const { comparisonID } = req.data;
       const db = cds.db;
-
+      /**
+       * 
+       * 
+       * 
+       */
       // Fetch the comparison record
       const comparison = await db.run(
         SELECT.one
@@ -583,8 +664,11 @@ this.on('READ', 'Events', async (req) => {
       if (!comparison) {
         return req.error(404, `BidComparison ${comparisonID} not found`);
       }
-
-      // Fetch related entities for report content
+      /**
+       * Fetches the RFQ item related to the bid comparison.
+       *
+       *  
+       */
       const [rfqItem] = await Promise.all([
         db.run(
           SELECT.one
@@ -593,7 +677,11 @@ this.on('READ', 'Events', async (req) => {
         ),
       ]);
 
-      // Fetch RFQ event
+      
+      /**
+       * Fetches the RFQ event related to the RFQ item.
+       * 
+       */
       const rfqEvent = rfqItem
   ? await db.run(`
       SELECT TOP 1 *
@@ -619,21 +707,28 @@ res.setHeader(
 );
 res.setHeader("Content-Length", pdfBuffer.length);
 
-// Send binary directly
+
+/**
+ * Sends the generated PDF buffer as the response.
+ * 
+ */
 res.end(pdfBuffer);
 
 // Tell CAP: response already handled
+
+/**
+ * 
+ * 
+ */
 return;
-
-
-
-
-
-
 
     });
 
-    // Register default CRUD handlers
+    /**
+     * Initializes the service and registers CRUD handlers.
+     * 
+     * 
+     */
     await super.init();
   }
 };
